@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NZ Price Watch — Local & Overseas Deal Tracker in NZD</title>
+  <!-- PWA & Custom Home Screen Icon Links for GitHub Pages -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <meta name="theme-color" content="#06131c">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            abyss: '#06131c',
+            trench: '#071926',
+            marine: '#0b1f2d',
+            reef: '#0f293a',
+            pelagic: '#16384d',
+            aqua: '#22d3ee',
+            pacific: '#0ea5e9',
+            seafoam: '#2dd4bf',
+            surf: '#38bdf8',
+            ice: '#f0f9ff',
+            mist: '#94b8cc',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Deep ocean subtle radial depth */
+    body {
+      background-color: #06131c;
+      background-image:
+        radial-gradient(circle at 12% 0%, rgba(14, 165, 233, 0.14) 0%, transparent 42%),
+        radial-gradient(circle at 88% 12%, rgba(45, 212, 191, 0.10) 0%, transparent 38%);
+    }
+    /* Custom subtle animations for scanning and toasts */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      70% { transform: scale(1.15); opacity: 0; }
+      100% { transform: scale(0.95); opacity: 0; }
+    }
+    .animate-pulse-ring {
+      animation: pulse-ring 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+    }
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .toast-enter {
+      animation: slideInRight 0.3s ease-out forwards;
+    }
+    /* Custom dark ocean scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #06131c;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #16384d;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #22d3ee;
+    }
+  </style>
+</head>
+<body class="bg-[#06131c] text-[#f0f9ff] min-h-screen flex flex-col">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- Top Navigation Header (Glassmorphic Deep Ocean) -->
+  <header class="bg-[#071926]/90 backdrop-blur-md text-[#f0f9ff] sticky top-0 z-30 shadow-xl shadow-black/30 border-b border-sky-400/15">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 gap-3">
+        <!-- Brand Logo (Custom Southern Cross Ocean Tag) -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-[#06131c] border border-cyan-400/35 flex items-center justify-center shadow-lg shadow-cyan-500/15 shrink-0 overflow-hidden">
+            <svg class="w-8 h-8" viewBox="0 0 512 512" fill="none">
+              <defs>
+                <linearGradient id="oceanTagGrad" x1="116" y1="128" x2="388" y2="399" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#22d3ee"/>
+                  <stop offset="100%" stop-color="#2dd4bf"/>
+                </linearGradient>
+              </defs>
+              <path d="M116 128h140l132 132c13 13 13 34 0 47l-92 92c-13 13-34 13-47 0L116 266V128z" fill="url(#oceanTagGrad)"/>
+              <circle cx="178" cy="190" r="22" fill="#06131c"/>
+              <path d="M368 104l7 16 16 7-16 7-7 16-7-16-16-7 16-7z" fill="#22d3ee"/>
+              <path d="M420 156l6 13 13 6-13 6-6 13-6-13-13-6 13-6z" fill="#f0f9ff"/>
+              <path d="M320 148l5 11 11 5-11 5-5 11-5-11-11-5 11-5z" fill="#38bdf8"/>
+              <path d="M368 204l6 14 14 6-14 6-6 14-6-14-14-6 14-6z" fill="#2dd4bf"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-extrabold text-lg sm:text-xl tracking-tight text-[#f0f9ff]">NZ Price Watch</span>
+              <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-cyan-400/15 text-[#22d3ee] border border-cyan-400/30">
+                NZD AUTO-FX
+              </span>
+            </div>
+            <p class="text-xs text-[#94b8cc] hidden sm:block">Local & Global Sale Alerts Converted to NZD</p>
+          </div>
+        </div>
+
+        <!-- Right Header Controls -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <!-- Scan Prices Button -->
+          <button id="scan-btn" onclick="runLiveScan()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#0b1f2d] hover:bg-[#0f293a] text-[#22d3ee] border border-sky-400/25 text-xs sm:text-sm font-semibold transition-all active:scale-95">
+            <svg id="scan-icon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span id="scan-btn-text">Scan Prices</span>
+          </button>
+
+          <!-- Add Item Button -->
+          <button onclick="openAddModal()" class="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-[#0ea5e9] to-[#22d3ee] hover:from-[#38bdf8] hover:to-[#2dd4bf] text-[#041019] text-xs sm:text-sm font-extrabold shadow-lg shadow-cyan-500/20 transition-all active:scale-95">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Track Item</span>
+          </button>
+
+          <!-- Notification Bell -->
+          <button onclick="toggleNotifications()" class="relative p-2.5 rounded-xl bg-[#0b1f2d] hover:bg-[#0f293a] text-[#f0f9ff] border border-sky-400/25 transition-all" aria-label="Notifications">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <span id="notif-badge" class="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-[#2dd4bf] text-[#041019] text-[11px] font-extrabold flex items-center justify-center shadow-md shadow-teal-400/30">
+              3
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live FX Ticker Bar -->
+    <div class="bg-[#06131c]/95 border-t border-sky-400/15 text-xs">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-3 overflow-x-auto no-scrollbar py-0.5">
+          <span class="inline-flex items-center gap-1.5 text-[#2dd4bf] font-semibold shrink-0">
+            <span class="w-2 h-2 rounded-full bg-[#2dd4bf] animate-pulse"></span>
+            Live NZD Rates:
+          </span>
+          <div id="fx-ticker-list" class="flex items-center gap-3 text-[#f0f9ff] shrink-0">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none text-[#94b8cc] hover:text-[#f0f9ff]">
+            <input type="checkbox" id="global-landed-toggle" checked onchange="toggleGlobalLandedCost()" class="rounded border-[#16384d] bg-[#0b1f2d] text-[#22d3ee] focus:ring-[#22d3ee]">
+            <span>Include est. NZ GST (15%) & Shipping on overseas deals</span>
+          </label>
+          <button onclick="openFxModal()" class="text-[#22d3ee] hover:text-[#38bdf8] underline font-semibold">
+            Edit FX
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+
+    <!-- Scanning Progress Banner (Hidden by default) -->
+    <div id="scan-banner" class="hidden rounded-2xl bg-[#0b1f2d] text-[#f0f9ff] p-4 border border-cyan-400/40 shadow-lg shadow-cyan-950/50 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="relative flex items-center justify-center w-9 h-9 rounded-full bg-cyan-400/15 text-[#22d3ee]">
+          <span class="absolute inset-0 rounded-full bg-cyan-400/25 animate-pulse-ring"></span>
+          <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-6.219-8.56" />
+          </svg>
+        </div>
+        <div>
+          <p class="font-semibold text-sm text-[#f0f9ff]" id="scan-status-title">Scanning NZ & Overseas Retailers...</p>
+          <p class="text-xs text-[#94b8cc]" id="scan-status-sub">Checking PB Tech, Mighty Ape, Briscoes, Amazon US, Amazon AU & ASOS...</p>
+        </div>
+      </div>
+      <span class="text-xs font-mono bg-[#06131c] px-2.5 py-1 rounded-lg text-[#22d3ee] border border-cyan-400/30" id="scan-progress-pct">0%</span>
+    </div>
+
+    <!-- Summary KPI Cards -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div class="bg-[#0b1f2d] rounded-2xl p-4 sm:p-5 border border-sky-400/15 shadow-lg shadow-black/20">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#94b8cc]">Tracked Items</span>
+          <span class="p-2 rounded-xl bg-sky-400/10 text-[#38bdf8]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+          </span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span id="stat-total" class="text-2xl sm:text-3xl font-extrabold text-[#f0f9ff]">0</span>
+          <span class="text-xs font-medium text-[#94b8cc]" id="stat-region-breakdown">NZ & Global</span>
+        </div>
+      </div>
+
+      <div class="bg-[#0b1f2d] rounded-2xl p-4 sm:p-5 border border-teal-400/35 shadow-lg shadow-teal-950/30 relative overflow-hidden">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#2dd4bf]">On Sale / Target Hit</span>
+          <span class="p-2 rounded-xl bg-teal-400/15 text-[#2dd4bf]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+          </span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span id="stat-deals" class="text-2xl sm:text-3xl font-extrabold text-[#f0f9ff]">0</span>
+          <span id="stat-target-hits" class="text-xs font-bold px-2 py-0.5 rounded-full bg-teal-400/20 text-[#2dd4bf] border border-teal-400/30">0 target hits</span>
+        </div>
+      </div>
+
+      <div class="bg-[#0b1f2d] rounded-2xl p-4 sm:p-5 border border-sky-400/15 shadow-lg shadow-black/20">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#94b8cc]">Total Savings (NZD)</span>
+          <span class="p-2 rounded-xl bg-cyan-400/10 text-[#22d3ee]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-1.5">
+          <span id="stat-savings" class="text-2xl sm:text-3xl font-extrabold text-[#2dd4bf]">$0</span>
+          <span class="text-xs font-semibold text-[#94b8cc]">NZD off RRP</span>
+        </div>
+      </div>
+
+      <div class="bg-[#0b1f2d] rounded-2xl p-4 sm:p-5 border border-sky-400/15 shadow-lg shadow-black/20">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#94b8cc]">Avg. Discount</span>
+          <span class="p-2 rounded-xl bg-sky-400/10 text-[#38bdf8]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+          </span>
+        </div>
+        <div class="mt-2 flex items-baseline gap-2">
+          <span id="stat-avg-discount" class="text-2xl sm:text-3xl font-extrabold text-[#f0f9ff]">0%</span>
+          <span class="text-xs text-[#94b8cc]">across active deals</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Prominent Region & Filter Controls -->
+    <section class="bg-[#0b1f2d] rounded-2xl p-4 border border-sky-400/15 shadow-lg shadow-black/20 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <!-- Region Switcher Tabs -->
+      <div class="flex flex-col sm:flex-row sm:items-center gap-2.5">
+        <span class="text-xs font-bold uppercase tracking-wider text-[#94b8cc]">Store Region:</span>
+        <div class="inline-flex p-1 rounded-xl bg-[#06131c] border border-sky-400/20 self-start" role="group">
+          <button onclick="setRegionFilter('ALL')" id="region-btn-ALL" class="region-tab px-3.5 py-2 rounded-lg text-xs sm:text-sm font-extrabold transition-all bg-[#0ea5e9] text-[#041019] shadow-sm shadow-cyan-500/20">
+            🌏 All Regions
+          </button>
+          <button onclick="setRegionFilter('NZ')" id="region-btn-NZ" class="region-tab px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all text-[#94b8cc] hover:text-[#f0f9ff]">
+            🇳🇿 NZ Stores Only
+          </button>
+          <button onclick="setRegionFilter('OVERSEAS')" id="region-btn-OVERSEAS" class="region-tab px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all text-[#94b8cc] hover:text-[#f0f9ff]">
+            ✈️ Overseas Only
+          </button>
+        </div>
+      </div>
+
+      <!-- Status, Category & Search Filters -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Status Filter -->
+        <select id="status-filter" onchange="renderDashboard()" class="rounded-xl border border-sky-400/20 bg-[#06131c] px-3 py-2 text-xs sm:text-sm font-semibold text-[#f0f9ff] focus:outline-none focus:ring-2 focus:ring-[#22d3ee]">
+          <option value="ALL">All Statuses</option>
+          <option value="TARGET_HIT">🔥 Target Price Hit</option>
+          <option value="ON_SALE">🏷️ On Sale Now</option>
+          <option value="WATCHING">👀 Watching Only</option>
+        </select>
+
+        <!-- Category Filter -->
+        <select id="category-filter" onchange="renderDashboard()" class="rounded-xl border border-sky-400/20 bg-[#06131c] px-3 py-2 text-xs sm:text-sm font-semibold text-[#f0f9ff] focus:outline-none focus:ring-2 focus:ring-[#22d3ee]">
+          <option value="ALL">All Categories</option>
+          <option value="Electronics">Electronics</option>
+          <option value="Home & Kitchen">Home & Kitchen</option>
+          <option value="Gaming">Gaming</option>
+          <option value="Outdoor & Apparel">Outdoor & Apparel</option>
+          <option value="Health & Beauty">Health & Beauty</option>
+        </select>
+
+        <!-- Search Input -->
+        <div class="relative flex-1 sm:flex-initial min-w-[200px]">
+          <svg class="w-4 h-4 text-[#94b8cc] absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input type="text" id="search-input" oninput="renderDashboard()" placeholder="Search item or store..." class="w-full pl-9 pr-3 py-2 rounded-xl border border-sky-400/20 bg-[#06131c] text-xs sm:text-sm text-[#f0f9ff] placeholder-[#94b8cc]/70 focus:outline-none focus:ring-2 focus:ring-[#22d3ee]">
+        </div>
+      </div>
+    </section>
+
+    <!-- Tracked Items Grid -->
+    <section>
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-base sm:text-lg font-extrabold text-[#f0f9ff] flex items-center gap-2">
+          <span>Your Price Watchlist</span>
+          <span id="visible-count-badge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-cyan-400/15 text-[#22d3ee] border border-cyan-400/25">0 items</span>
+        </h2>
+        <span class="text-xs text-[#94b8cc] hidden sm:inline">Tip: Click <strong class="text-[#22d3ee]">"Simulate Drop"</strong> on any card to test instant NZD price alerts</span>
+      </div>
+
+      <div id="items-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <!-- Populated dynamically via JS -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="empty-state" class="hidden bg-[#0b1f2d] rounded-2xl border border-dashed border-sky-400/30 p-10 text-center">
+        <div class="w-14 h-14 rounded-2xl bg-cyan-400/10 text-[#22d3ee] flex items-center justify-center mx-auto mb-3 text-2xl">
+          🔍
+        </div>
+        <h3 class="text-base font-bold text-[#f0f9ff]">No tracked items match your filters</h3>
+        <p class="text-sm text-[#94b8cc] mt-1 max-w-md mx-auto">Try switching between All Regions, NZ Stores Only, or Overseas Only, or add a new item to watch.</p>
+        <button onclick="resetFilters()" class="mt-4 px-4 py-2 rounded-xl bg-[#0ea5e9] text-[#041019] text-sm font-bold hover:bg-[#38bdf8] transition">
+          Reset Filters
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-[#071926] border-t border-sky-400/15 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#94b8cc]">
+      <p><strong class="text-[#f0f9ff]">NZ Price Watch</strong> — Smart price tracking across Aotearoa & global retailers. All prices automatically converted to NZD.</p>
+      <p>Overseas landed cost estimates include 15% NZ GST & standard international shipping.</p>
+    </div>
+  </footer>
+
+  <!-- ========================================================= -->
+  <!-- MODAL 1: ADD NEW ITEM TO TRACK                            -->
+  <!-- ========================================================= -->
+  <div id="add-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-[#030b11]/80 backdrop-blur-sm p-4">
+    <div class="bg-[#0b1f2d] rounded-2xl max-w-lg w-full shadow-2xl border border-sky-400/25 overflow-hidden animate-fadeIn">
+      <div class="px-6 py-4 bg-[#071926] border-b border-sky-400/15 text-[#f0f9ff] flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0ea5e9] to-[#2dd4bf] text-[#041019] flex items-center justify-center font-extrabold">+</span>
+          <h3 class="font-bold text-base sm:text-lg">Track a New Item</h3>
+        </div>
+        <button onclick="closeAddModal()" class="text-[#94b8cc] hover:text-[#f0f9ff] p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+
+      <form id="add-item-form" onsubmit="handleAddItem(event)" class="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-[#94b8cc] mb-1">Item Name *</label>
+          <input type="text" id="form-name" required placeholder="e.g., Dyson V15 Detect Vacuum or Bose QuietComfort" class="w-full rounded-xl border border-sky-400/25 bg-[#06131c] px-3.5 py-2.5 text-sm text-[#f0f9ff] placeholder-[#94b8cc]/60 focus:outline-none focus:ring-2 focus:ring-[#22d3ee]">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-[#94b8cc] mb-1">Category *</label>
+            <select id="form-category" class="w-full rounded-xl border border-sky-400/25 bg-[#06131c] px-3.5 py-2.5 text-sm text-[#f0f9ff] focus:outline-none focus:ring-2 focus:ring-[#22d3ee]">
+              <option value="Electronics">Electronics</option>
+              <option value="Home & Kitchen">Home & Kitchen</option>
+              <option value="Gaming">Gaming</option>
+              <option value="Outdoor & Apparel">Outdoor & Apparel</option>
+              <option value="Health & Beauty">Health & Beauty</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-[#94b8cc] mb-1">Where to Watch *</label>
+            <select id="form-region-pref" onchange="toggleOverseasFormFields()" class="w-full rounded-xl border border-sky-400/25 bg-[#06131c] px-3.5 py-2.5 text-sm text-[#f0f9ff] focus:outline-none focus:ring-2 focus:ring-[#22d3ee]">
+              <option value="BOTH">🌏 Both NZ & Overseas</option>
+              <option value="NZ">🇳🇿 NZ Stores Only</option>
+              <option value="OVERSEAS">✈️ Overseas Stores Only</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-[#94b8cc] mb-1">Current RRP / Baseline (NZD) *</label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94b8cc] font-semibold text-sm">$</span>
+              <input type="number" id="form-rrp" required min="5" step="0.01" placeholder="599.00" class="w-full rounded-xl border border-sky-400/25 bg-[#06131c] pl-8 pr-3.5 py-2.5 text-sm text-[#f0f9ff] placeholder-[#94b8cc]/60 focus:outline-none focus:ring-2 focus:ring-[#22d3ee]">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-[#2dd4bf] mb-1">Target Alert Price (NZD) *</label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#2dd4bf] font-bold text-sm">$</span>
+              <input type="number" id="form-target" required min="1" step="0.01" placeholder="450.00" class="w-full rounded-xl border border-teal-400/50 bg-teal-950/30 pl-8 pr-3.5 py-2.5 text-sm font-bold text-[#f0f9ff] placeholder-[#94b8cc]/60 focus:outline-none focus:ring-2 focus:ring-[#2dd4bf]">
+            </div>
+          </div>
+        </div>
+
+        <!-- Overseas Currency & Landed Cost Options -->
+        <div id="overseas-options-box" class="rounded-xl bg-[#06131c] border border-sky-400/20 p-3.5 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-[#f0f9ff]">Overseas Source Simulation</span>
+            <select id="form-foreign-currency" class="rounded-lg border border-sky-400/25 bg-[#0b1f2d] px-2.5 py-1 text-xs font-bold text-[#22d3ee]">
+              <option value="USD">🇺🇸 USD (Amazon US / B&H)</option>
+              <option value="AUD">🇦🇺 AUD (Amazon AU / JB AU)</option>
+              <option value="GBP">🇬🇧 GBP (ASOS / Amazon UK)</option>
+              <option value="EUR">🇪🇺 EUR (EU Retailers)</option>
+            </select>
+          </div>
+          <label class="flex items-start gap-2.5 cursor-pointer">
+            <input type="checkbox" id="form-include-gst" checked class="mt-0.5 rounded border-[#16384d] bg-[#0b1f2d] text-[#22d3ee] focus:ring-[#22d3ee]">
+            <span class="text-xs text-[#94b8cc] leading-relaxed">
+              Include estimated <strong class="text-[#f0f9ff]">15% NZ GST & International Shipping</strong> (~$22 NZD) when calculating overseas landed NZD price.
+            </span>
+          </label>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-[#94b8cc] mb-1">Product URL or Store Hint (Optional)</label>
+          <input type="text" id="form-url" placeholder="https://www.pbtech.co.nz/... or Amazon link" class="w-full rounded-xl border border-sky-400/25 bg-[#06131c] px-3.5 py-2.5 text-sm text-[#f0f9ff] placeholder-[#94b8cc]/60 focus:outline-none focus:ring-2 focus:ring-[#22d3ee]">
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2.5 border-t border-sky-400/15">
+          <button type="button" onclick="closeAddModal()" class="px-4 py-2.5 rounded-xl border border-sky-400/25 text-[#94b8cc] hover:text-[#f0f9ff] hover:bg-[#0f293a] text-sm font-semibold">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#0ea5e9] to-[#2dd4bf] hover:from-[#38bdf8] hover:to-[#2dd4bf] text-[#041019] text-sm font-extrabold shadow-lg shadow-cyan-500/20">
+            Start Watching Price
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL 2: PRICE HISTORY & STORE COMPARISON MODAL           -->
+  <!-- ========================================================= -->
+  <div id="history-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-[#030b11]/80 backdrop-blur-sm p-4">
+    <div class="bg-[#0b1f2d] rounded-2xl max-w-xl w-full shadow-2xl border border-sky-400/25 overflow-hidden">
+      <div class="px-6 py-4 bg-[#071926] border-b border-sky-400/15 text-[#f0f9ff] flex items-center justify-between">
+        <div>
+          <span class="text-[11px] uppercase tracking-wider text-[#22d3ee] font-bold">NZD Price Intelligence</span>
+          <h3 id="history-modal-title" class="font-bold text-base sm:text-lg leading-tight mt-0.5">Item Name</h3>
+        </div>
+        <button onclick="closeHistoryModal()" class="text-[#94b8cc] hover:text-[#f0f9ff] p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div id="history-modal-body" class="p-6 space-y-5 max-h-[82vh] overflow-y-auto">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL 3: EDIT EXCHANGE RATES TO NZD                       -->
+  <!-- ========================================================= -->
+  <div id="fx-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-[#030b11]/80 backdrop-blur-sm p-4">
+    <div class="bg-[#0b1f2d] rounded-2xl max-w-md w-full shadow-2xl border border-sky-400/25 overflow-hidden">
+      <div class="px-6 py-4 bg-[#071926] border-b border-sky-400/15 text-[#f0f9ff] flex items-center justify-between">
+        <h3 class="font-bold text-base">NZD Exchange Rates</h3>
+        <button onclick="closeFxModal()" class="text-[#94b8cc] hover:text-[#f0f9ff] p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+      <div class="p-6 space-y-4">
+        <p class="text-xs text-[#94b8cc]">All overseas prices are automatically converted into NZD using these rates. Adjust below to test currency fluctuations:</p>
+        <div class="space-y-3" id="fx-inputs-container">
+          <!-- Populated by JS -->
+        </div>
+        <div class="flex items-center justify-between pt-3 border-t border-sky-400/15">
+          <button onclick="resetFxRates()" class="text-xs font-semibold text-[#94b8cc] hover:text-[#f0f9ff] underline">
+            Reset Default Rates
+          </button>
+          <button onclick="saveFxRates()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#0ea5e9] to-[#22d3ee] hover:from-[#38bdf8] hover:to-[#2dd4bf] text-[#041019] text-sm font-extrabold">
+            Apply Rates
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- SLIDE-OVER DRAWER: NOTIFICATION CENTER                    -->
+  <!-- ========================================================= -->
+  <div id="notif-drawer-backdrop" onclick="toggleNotifications()" class="fixed inset-0 z-40 hidden bg-[#030b11]/75 backdrop-blur-xs"></div>
+  <aside id="notif-drawer" class="fixed top-0 right-0 z-50 h-full w-full max-w-md bg-[#0b1f2d] shadow-2xl border-l border-sky-400/20 transform translate-x-full transition-transform duration-300 flex flex-col">
+    <div class="px-5 py-4 bg-[#071926] border-b border-sky-400/15 text-[#f0f9ff] flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-lg">🔔</span>
+        <h3 class="font-bold text-base">Sale & Target Alerts</h3>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="clearNotifications()" class="text-xs text-[#041019] font-extrabold hover:bg-[#5eead4] px-2.5 py-1 rounded-lg bg-[#2dd4bf]">
+          Mark all read
+        </button>
+        <button onclick="toggleNotifications()" class="text-[#94b8cc] hover:text-[#f0f9ff] p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+    </div>
+    <div id="notif-list" class="flex-1 overflow-y-auto p-4 space-y-3 bg-[#06131c]">
+      <!-- Populated dynamically -->
+    </div>
+  </aside>
+
+  <!-- ========================================================= -->
+  <!-- APPLICATION LOGIC                                         -->
+  <!-- ========================================================= -->
+  <script>
+    // Default Exchange Rates to NZD (1 Foreign Unit = X NZD)
+    const DEFAULT_FX_RATES = {
+      NZD: 1.00,
+      USD: 1.71,
+      AUD: 1.11,
+      GBP: 2.18,
+      EUR: 1.85
+    };
+
+    let fxRates = { ...DEFAULT_FX_RATES };
+    let includeGlobalLandedCost = true;
+    let currentRegionFilter = 'ALL'; // 'ALL' | 'NZ' | 'OVERSEAS'
+
+    // Pre-populated realistic NZ & Overseas Watchlist
+    let trackedItems = [
+      {
+        id: 'item-1',
+        name: 'Sony WH-1000XM5 Wireless Noise Cancelling Headphones',
+        category: 'Electronics',
+        emoji: '🎧',
+        regionType: 'OVERSEAS', // Best deal found overseas
+        regionPref: 'BOTH',
+        storeName: 'Amazon US',
+        storeUrl: 'https://www.amazon.com',
+        currency: 'USD',
+        foreignPrice: 248.00, // Base foreign price
+        rrpNzd: 649.00,
+        targetNzd: 499.00,
+        includeLanded: true,
+        shippingNzd: 24.00,
+        nzComparisonStore: 'PB Tech NZ',
+        nzComparisonPriceNzd: 579.00,
+        historyNzd: [649, 629, 599, 585, 540, 512],
+        lastChecked: '4 mins ago'
+      },
+      {
+        id: 'item-2',
+        name: 'Ninja CREAMi Deluxe 11-in-1 Ice Cream Maker',
+        category: 'Home & Kitchen',
+        emoji: '🍨',
+        regionType: 'NZ',
+        regionPref: 'NZ',
+        storeName: 'Briscoes NZ',
+        storeUrl: 'https://www.briscoes.co.nz',
+        currency: 'NZD',
+        foreignPrice: 329.00,
+        rrpNzd: 499.99,
+        targetNzd: 340.00,
+        includeLanded: false,
+        shippingNzd: 0,
+        nzComparisonStore: 'Noel Leeming',
+        nzComparisonPriceNzd: 449.00,
+        historyNzd: [499, 499, 429, 399, 379, 329],
+        lastChecked: 'Just now'
+      },
+      {
+        id: 'item-3',
+        name: 'Nintendo Switch OLED Model — White Joy-Con',
+        category: 'Gaming',
+        emoji: '🎮',
+        regionType: 'NZ',
+        regionPref: 'BOTH',
+        storeName: 'Mighty Ape NZ',
+        storeUrl: 'https://www.mightyape.co.nz',
+        currency: 'NZD',
+        foreignPrice: 469.00,
+        rrpNzd: 549.00,
+        targetNzd: 450.00,
+        includeLanded: false,
+        shippingNzd: 0,
+        nzComparisonStore: 'JB Hi-Fi NZ',
+        nzComparisonPriceNzd: 488.00,
+        historyNzd: [549, 539, 519, 499, 489, 469],
+        lastChecked: '12 mins ago'
+      },
+      {
+        id: 'item-4',
+        name: "Patagonia Torrentshell 3L Men's Waterproof Jacket",
+        category: 'Outdoor & Apparel',
+        emoji: '🧥',
+        regionType: 'OVERSEAS',
+        regionPref: 'OVERSEAS',
+        storeName: 'REI Co-op US',
+        storeUrl: 'https://www.rei.com',
+        currency: 'USD',
+        foreignPrice: 125.00,
+        rrpNzd: 349.00,
+        targetNzd: 265.00,
+        includeLanded: true,
+        shippingNzd: 28.00,
+        nzComparisonStore: 'Torpedo7 / NZ Retail',
+        nzComparisonPriceNzd: 349.00,
+        historyNzd: [349, 349, 320, 310, 295, 274],
+        lastChecked: '18 mins ago'
+      },
+      {
+        id: 'item-5',
+        name: 'Breville Barista Express Espresso Machine (BES870)',
+        category: 'Home & Kitchen',
+        emoji: '☕',
+        regionType: 'OVERSEAS',
+        regionPref: 'BOTH',
+        storeName: 'Amazon AU',
+        storeUrl: 'https://www.amazon.com.au',
+        currency: 'AUD',
+        foreignPrice: 549.00,
+        rrpNzd: 999.00,
+        targetNzd: 740.00,
+        includeLanded: true,
+        shippingNzd: 35.00,
+        nzComparisonStore: 'Farmers NZ',
+        nzComparisonPriceNzd: 849.00,
+        historyNzd: [999, 949, 899, 849, 780, 736],
+        lastChecked: '25 mins ago'
+      },
+      {
+        id: 'item-6',
+        name: 'Apple AirPods Pro (2nd Gen) USB-C MagSafe',
+        category: 'Electronics',
+        emoji: '🎵',
+        regionType: 'NZ',
+        regionPref: 'NZ',
+        storeName: 'PB Tech NZ',
+        storeUrl: 'https://www.pbtech.co.nz',
+        currency: 'NZD',
+        foreignPrice: 398.00,
+        rrpNzd: 449.00,
+        targetNzd: 365.00,
+        includeLanded: false,
+        shippingNzd: 0,
+        nzComparisonStore: 'Apple Store NZ',
+        nzComparisonPriceNzd: 449.00,
+        historyNzd: [449, 449, 429, 419, 409, 398],
+        lastChecked: '31 mins ago'
+      }
+    ];
+
+    // Notification Feed
+    let notifications = [
+      {
+        id: 'notif-1',
+        title: '🔥 Target Price Hit! Ninja CREAMi Deluxe',
+        message: 'Dropped to $329.00 NZD at Briscoes NZ (below your $340.00 NZD target).',
+        time: '2 mins ago',
+        unread: true,
+        type: 'target'
+      },
+      {
+        id: 'notif-2',
+        title: '🔥 Target Hit! Breville Barista Express',
+        message: 'Amazon AU dropped to $549 AUD (~$735.80 NZD landed incl. GST/shipping).',
+        time: '25 mins ago',
+        unread: true,
+        type: 'target'
+      },
+      {
+        id: 'notif-3',
+        title: '🏷️ Price Drop: Sony WH-1000XM5',
+        message: 'Amazon US fell to $248 USD ($511.70 NZD landed) — $67.30 cheaper than PB Tech NZ!',
+        time: '1 hour ago',
+        unread: true,
+        type: 'sale'
+      }
+    ];
+
+    // Calculate effective NZD price for an item (applying live FX and optional NZ GST + Shipping)
+    function calculateNzdPricing(item) {
+      if (item.currency === 'NZD') {
+        return {
+          baseNzd: item.foreignPrice,
+          gstNzd: 0,
+          shippingNzd: 0,
+          finalNzd: item.foreignPrice,
+          isLandedApplied: false
+        };
+      }
+
+      const rate = fxRates[item.currency] || 1;
+      const baseNzd = item.foreignPrice * rate;
+      const applyLanded = includeGlobalLandedCost && item.includeLanded;
+      const gstNzd = applyLanded ? baseNzd * 0.15 : 0;
+      const shippingNzd = applyLanded ? (item.shippingNzd || 22) : 0;
+      const finalNzd = baseNzd + gstNzd + shippingNzd;
+
+      return {
+        baseNzd,
+        gstNzd,
+        shippingNzd,
+        finalNzd,
+        isLandedApplied: applyLanded
+      };
+    }
+
+    // Format currency cleanly
+    function formatMoney(amount, currency = 'NZD') {
+      return new Intl.NumberFormat('en-NZ', {
+        style: 'currency',
+        currency: currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(amount);
+    }
+
+    // Determine Deal Status
+    function getItemStatus(item, finalNzd) {
+      const discountPct = Math.max(0, Math.round(((item.rrpNzd - finalNzd) / item.rrpNzd) * 100));
+      if (finalNzd <= item.targetNzd) {
+        return { code: 'TARGET_HIT', label: 'TARGET HIT! 🔥', discountPct };
+      }
+      if (discountPct >= 10) {
+        return { code: 'ON_SALE', label: `ON SALE • ${discountPct}% OFF`, discountPct };
+      }
+      return { code: 'WATCHING', label: 'WATCHING', discountPct };
+    }
+
+    // Render Live FX Ticker in Header
+    function renderFxTicker() {
+      const container = document.getElementById('fx-ticker-list');
+      const currencies = [
+        { code: 'USD', flag: '🇺🇸' },
+        { code: 'AUD', flag: '🇦🇺' },
+        { code: 'GBP', flag: '🇬🇧' },
+        { code: 'EUR', flag: '🇪🇺' }
+      ];
+
+      container.innerHTML = currencies.map(c => `
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#0b1f2d] border border-sky-400/20 text-[11px]">
+          <span>${c.flag}</span>
+          <span class="font-semibold text-[#f0f9ff]">1 ${c.code}</span>
+          <span class="text-[#94b8cc]">=</span>
+          <span class="font-bold text-[#22d3ee]">$${fxRates[c.code].toFixed(2)} NZD</span>
+        </span>
+      `).join('');
+    }
+
+    // Set Region Filter
+    function setRegionFilter(region) {
+      currentRegionFilter = region;
+      document.querySelectorAll('.region-tab').forEach(btn => {
+        btn.classList.remove('bg-[#0ea5e9]', 'text-[#041019]', 'shadow-sm', 'shadow-cyan-500/20', 'font-extrabold');
+        btn.classList.add('text-[#94b8cc]', 'font-semibold');
+      });
+      const activeBtn = document.getElementById(`region-btn-${region}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-[#0ea5e9]', 'text-[#041019]', 'shadow-sm', 'shadow-cyan-500/20', 'font-extrabold');
+        activeBtn.classList.remove('text-[#94b8cc]', 'font-semibold');
+      }
+      renderDashboard();
+    }
+
+    // Toggle Global Landed Cost (15% NZ GST + Shipping)
+    function toggleGlobalLandedCost() {
+      includeGlobalLandedCost = document.getElementById('global-landed-toggle').checked;
+      renderDashboard();
+      showToast(
+        includeGlobalLandedCost ? 'NZ Landed Cost Enabled' : 'Raw FX Conversion Only',
+        includeGlobalLandedCost
+          ? 'Overseas prices now include 15% NZ GST & est. shipping.'
+          : 'Showing pure foreign-to-NZD exchange conversion.',
+        'info'
+      );
+    }
+
+    // Generate Mini SVG Sparkline
+    function createSparklineSvg(prices, isGoodDeal) {
+      if (!prices || prices.length < 2) return '';
+      const width = 96;
+      const height = 28;
+      const min = Math.min(...prices);
+      const max = Math.max(...prices);
+      const range = max - min || 1;
+
+      const points = prices.map((val, idx) => {
+        const x = (idx / (prices.length - 1)) * width;
+        const y = height - 4 - ((val - min) / range) * (height - 8);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+
+      const strokeColor = isGoodDeal ? '#2dd4bf' : '#38bdf8';
+      const lastPoint = points.split(' ').pop().split(',');
+
+      return `
+        <svg width="${width}" height="${height}" class="overflow-visible">
+          <polyline fill="none" stroke="${strokeColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="${points}" />
+          <circle cx="${lastPoint[0]}" cy="${lastPoint[1]}" r="3" fill="${strokeColor}" />
+        </svg>
+      `;
+    }
+
+    // Main Dashboard Renderer
+    function renderDashboard() {
+      const statusFilter = document.getElementById('status-filter').value;
+      const categoryFilter = document.getElementById('category-filter').value;
+      const searchQuery = document.getElementById('search-input').value.trim().toLowerCase();
+
+      // Compute enriched items
+      const enrichedItems = trackedItems.map(item => {
+        const pricing = calculateNzdPricing(item);
+        const status = getItemStatus(item, pricing.finalNzd);
+        const savingsNzd = Math.max(0, item.rrpNzd - pricing.finalNzd);
+        return { ...item, pricing, status, savingsNzd };
+      });
+
+      // Update Global KPI Stats
+      const totalItems = enrichedItems.length;
+      const nzCount = enrichedItems.filter(i => i.regionType === 'NZ').length;
+      const overseasCount = enrichedItems.filter(i => i.regionType === 'OVERSEAS').length;
+      const activeDeals = enrichedItems.filter(i => i.status.code === 'TARGET_HIT' || i.status.code === 'ON_SALE');
+      const targetHits = enrichedItems.filter(i => i.status.code === 'TARGET_HIT').length;
+      const totalSavings = activeDeals.reduce((sum, i) => sum + i.savingsNzd, 0);
+      const avgDiscount = activeDeals.length > 0
+        ? Math.round(activeDeals.reduce((sum, i) => sum + i.status.discountPct, 0) / activeDeals.length)
+        : 0;
+
+      document.getElementById('stat-total').textContent = totalItems;
+      document.getElementById('stat-region-breakdown').textContent = `${nzCount} NZ • ${overseasCount} Overseas`;
+      document.getElementById('stat-deals').textContent = activeDeals.length;
+      document.getElementById('stat-target-hits').textContent = `${targetHits} target hit${targetHits === 1 ? '' : 's'}`;
+      document.getElementById('stat-savings').textContent = `$${Math.round(totalSavings).toLocaleString()}`;
+      document.getElementById('stat-avg-discount').textContent = `${avgDiscount}%`;
+
+      // Apply Filters
+      const filtered = enrichedItems.filter(item => {
+        if (currentRegionFilter !== 'ALL' && item.regionType !== currentRegionFilter) return false;
+        if (statusFilter !== 'ALL' && item.status.code !== statusFilter) return false;
+        if (categoryFilter !== 'ALL' && item.category !== categoryFilter) return false;
+        if (searchQuery) {
+          const haystack = `${item.name} ${item.storeName} ${item.category} ${item.currency}`.toLowerCase();
+          if (!haystack.includes(searchQuery)) return false;
+        }
+        return true;
+      });
+
+      document.getElementById('visible-count-badge').textContent = `${filtered.length} item${filtered.length === 1 ? '' : 's'}`;
+
+      const grid = document.getElementById('items-grid');
+      const emptyState = document.getElementById('empty-state');
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      grid.innerHTML = filtered.map(item => {
+        const { pricing, status, savingsNzd } = item;
+        const isTargetHit = status.code === 'TARGET_HIT';
+        const isOnSale = status.code === 'ON_SALE';
+
+        // Badge Styling using Dark Ocean palette
+        let statusBadgeClass = 'bg-[#06131c] text-[#94b8cc] border-sky-400/20 font-semibold';
+        if (isTargetHit) statusBadgeClass = 'bg-gradient-to-r from-[#2dd4bf] to-[#22d3ee] text-[#041019] border-teal-300/50 font-extrabold shadow-sm shadow-teal-400/25';
+        else if (isOnSale) statusBadgeClass = 'bg-teal-400/15 text-[#2dd4bf] border-teal-400/35 font-bold';
+
+        // Region Badge
+        const regionBadge = item.regionType === 'NZ'
+          ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-400/15 text-emerald-300 border border-emerald-400/30">🇳🇿 NZ Local • ${item.storeName}</span>`
+          : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-400/15 text-[#38bdf8] border border-sky-400/30">✈️ Overseas • ${item.storeName}</span>`;
+
+        // Progress towards target price bar
+        const rrpToTargetSpan = Math.max(1, item.rrpNzd - item.targetNzd);
+        const currentProgress = Math.min(100, Math.max(8, ((item.rrpNzd - pricing.finalNzd) / rrpToTargetSpan) * 100));
+        const diffFromTarget = pricing.finalNzd - item.targetNzd;
+
+        // Foreign conversion line
+        const fxConversionLine = item.currency !== 'NZD'
+          ? `<div class="text-xs text-[#94b8cc] mt-0.5 flex flex-wrap items-center gap-1.5">
+               <span class="font-semibold text-[#22d3ee]">${formatMoney(item.foreignPrice, item.currency)} ${item.currency}</span>
+               <span>→</span>
+               <span>$${pricing.baseNzd.toFixed(2)} NZD</span>
+               ${pricing.isLandedApplied ? `<span class="text-[11px] px-1.5 py-0.2 rounded bg-[#06131c] border border-sky-400/25 text-[#f0f9ff]">+GST & Ship</span>` : ''}
+             </div>`
+          : `<div class="text-xs text-[#94b8cc] mt-0.5">Local NZD listing • Incl. GST</div>`;
+
+        // NZ vs Overseas comparison callout
+        const comparisonHint = item.regionType === 'OVERSEAS' && item.nzComparisonPriceNzd
+          ? `<div class="text-[11px] text-[#f0f9ff] bg-teal-400/10 border border-teal-400/25 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+               <span class="text-[#94b8cc]">vs. ${item.nzComparisonStore}: $${item.nzComparisonPriceNzd.toFixed(0)} NZD</span>
+               <span class="font-extrabold text-[#2dd4bf]">${pricing.finalNzd < item.nzComparisonPriceNzd ? `Save $${(item.nzComparisonPriceNzd - pricing.finalNzd).toFixed(0)} NZD` : 'NZ cheaper'}</span>
+             </div>`
+          : `<div class="text-[11px] text-[#94b8cc] bg-[#06131c] border border-sky-400/15 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+               <span>Next best: ${item.nzComparisonStore || 'Other NZ'}</span>
+               <span class="font-bold text-[#f0f9ff]">$${(item.nzComparisonPriceNzd || item.rrpNzd).toFixed(0)} NZD</span>
+             </div>`;
+
+        return `
+          <article class="bg-[#0b1f2d] rounded-2xl border ${isTargetHit ? 'border-teal-400/70 ring-2 ring-teal-400/20 shadow-lg shadow-teal-950/30' : 'border-sky-400/15 shadow-lg shadow-black/20'} hover:border-cyan-400/40 transition-all flex flex-col justify-between overflow-hidden">
+            <div class="p-5 space-y-4">
+              <!-- Top Row: Region & Status -->
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                ${regionBadge}
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] border ${statusBadgeClass}">
+                  ${status.label}
+                </span>
+              </div>
+
+              <!-- Item Identity -->
+              <div class="flex items-start gap-3.5">
+                <div class="w-12 h-12 rounded-2xl bg-[#06131c] border border-sky-400/20 flex items-center justify-center text-2xl shrink-0">
+                  ${item.emoji}
+                </div>
+                <div class="min-w-0 flex-1">
+                  <span class="text-[11px] font-bold uppercase tracking-wider text-[#94b8cc]">${item.category}</span>
+                  <h3 class="font-bold text-[#f0f9ff] text-sm sm:text-base leading-snug line-clamp-2" title="${item.name}">
+                    ${item.name}
+                  </h3>
+                </div>
+              </div>
+
+              <!-- Main NZD Price & Sparkline -->
+              <div class="pt-2 flex items-end justify-between gap-2 border-t border-sky-400/15">
+                <div>
+                  <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-extrabold text-[#f0f9ff]">${formatMoney(pricing.finalNzd, 'NZD')}</span>
+                    <span class="text-xs font-bold text-[#22d3ee]">NZD</span>
+                    ${savingsNzd > 5 ? `<span class="text-xs text-[#94b8cc] line-through">$${item.rrpNzd.toFixed(0)}</span>` : ''}
+                  </div>
+                  ${fxConversionLine}
+                </div>
+                <div class="flex flex-col items-end shrink-0">
+                  ${createSparklineSvg([...item.historyNzd, Math.round(pricing.finalNzd)], isTargetHit || isOnSale)}
+                  <span class="text-[10px] text-[#94b8cc] mt-1">30d trend</span>
+                </div>
+              </div>
+
+              <!-- Target Price Progress Bar -->
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-[#94b8cc] font-medium">Target: <strong class="text-[#f0f9ff]">${formatMoney(item.targetNzd, 'NZD')}</strong></span>
+                  <span class="font-bold ${diffFromTarget <= 0 ? 'text-[#2dd4bf]' : 'text-[#38bdf8]'}">
+                    ${diffFromTarget <= 0 ? `${formatMoney(Math.abs(diffFromTarget))} under target!` : `$${diffFromTarget.toFixed(0)} away`}
+                  </span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-[#06131c] border border-sky-400/15 overflow-hidden">
+                  <div class="h-full rounded-full transition-all duration-500 ${isTargetHit ? 'bg-gradient-to-r from-[#2dd4bf] to-[#22d3ee]' : 'bg-[#0ea5e9]'}" style="width: ${currentProgress}%"></div>
+                </div>
+              </div>
+
+              <!-- Local vs Overseas Comparison Pill -->
+              ${comparisonHint}
+            </div>
+
+            <!-- Card Footer Actions -->
+            <div class="px-5 py-3 bg-[#071926] border-t border-sky-400/15 flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5">
+                <button onclick="simulatePriceDrop('${item.id}')" class="px-2.5 py-1.5 rounded-lg bg-[#0b1f2d] hover:bg-teal-400/15 text-[#f0f9ff] border border-sky-400/20 hover:border-teal-400/50 text-xs font-bold transition flex items-center gap-1" title="Simulate a retailer price drop">
+                  <span>📉</span>
+                  <span>Simulate Drop</span>
+                </button>
+                <button onclick="openHistoryModal('${item.id}')" class="px-2.5 py-1.5 rounded-lg bg-[#0b1f2d] hover:bg-[#0f293a] text-[#94b8cc] hover:text-[#f0f9ff] border border-sky-400/20 text-xs font-semibold transition">
+                  Details
+                </button>
+              </div>
+
+              <div class="flex items-center gap-1.5">
+                <a href="${item.storeUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-[#0ea5e9] hover:bg-[#38bdf8] text-[#041019] text-xs font-extrabold transition">
+                  Store ↗
+                </a>
+                <button onclick="removeItem('${item.id}')" class="p-1.5 rounded-lg text-[#94b8cc] hover:text-rose-400 hover:bg-rose-500/15 transition" title="Remove from watchlist">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    // Simulate a Price Drop on an individual item (great for testing alerts)
+    function simulatePriceDrop(itemId) {
+      const item = trackedItems.find(i => i.id === itemId);
+      if (!item) return;
+
+      // Drop price by ~12%
+      const dropFactor = 0.88;
+      item.foreignPrice = Math.max(15, Number((item.foreignPrice * dropFactor).toFixed(2)));
+      const newPricing = calculateNzdPricing(item);
+      item.historyNzd.push(Math.round(newPricing.finalNzd));
+      if (item.historyNzd.length > 8) item.historyNzd.shift();
+      item.lastChecked = 'Just now';
+
+      const isHit = newPricing.finalNzd <= item.targetNzd;
+      const title = isHit
+        ? `🔥 TARGET HIT: ${item.name}`
+        : `🏷️ Sale Alert: ${item.name}`;
+      const msg = `${item.storeName} dropped to ${formatMoney(newPricing.finalNzd)} NZD${item.currency !== 'NZD' ? ` (${formatMoney(item.foreignPrice, item.currency)} ${item.currency})` : ''}!`;
+
+      addNotification(title, msg, isHit ? 'target' : 'sale');
+      showToast(title, msg, isHit ? 'target' : 'sale');
+      renderDashboard();
+    }
+
+    // Simulated Live Price Scanner across NZ & Overseas stores
+    function runLiveScan() {
+      const scanBtn = document.getElementById('scan-btn');
+      const scanIcon = document.getElementById('scan-icon');
+      const scanBanner = document.getElementById('scan-banner');
+      const scanPct = document.getElementById('scan-progress-pct');
+      const scanSub = document.getElementById('scan-status-sub');
+
+      scanBtn.disabled = true;
+      scanIcon.classList.add('animate-spin');
+      scanBanner.classList.remove('hidden');
+
+      const steps = [
+        { pct: '25%', text: 'Checking NZ retailers (PB Tech, Briscoes, Mighty Ape, Noel Leeming)...' },
+        { pct: '60%', text: 'Querying Overseas stores (Amazon US, Amazon AU, REI, ASOS)...' },
+        { pct: '85%', text: 'Converting foreign prices to NZD & applying 15% GST/shipping estimates...' },
+        { pct: '100%', text: 'Scan complete! Updating watchlist deals...' }
+      ];
+
+      let stepIdx = 0;
+      const interval = setInterval(() => {
+        if (stepIdx < steps.length) {
+          scanPct.textContent = steps[stepIdx].pct;
+          scanSub.textContent = steps[stepIdx].text;
+          stepIdx++;
+        } else {
+          clearInterval(interval);
+          scanBtn.disabled = false;
+          scanIcon.classList.remove('animate-spin');
+          scanBanner.classList.add('hidden');
+
+          // Pick 1 or 2 items that haven't hit target yet and drop their prices
+          const candidates = trackedItems.filter(i => calculateNzdPricing(i).finalNzd > i.targetNzd);
+          if (candidates.length > 0) {
+            const luckyItem = candidates[Math.floor(Math.random() * candidates.length)];
+            // Drop enough to get close or hit target
+            const targetForeign = luckyItem.currency === 'NZD'
+              ? luckyItem.targetNzd - 4
+              : (luckyItem.targetNzd / (fxRates[luckyItem.currency] * (includeGlobalLandedCost ? 1.15 : 1))) - 3;
+
+            luckyItem.foreignPrice = Math.max(10, Number(targetForeign.toFixed(2)));
+            const updated = calculateNzdPricing(luckyItem);
+            luckyItem.historyNzd.push(Math.round(updated.finalNzd));
+            luckyItem.lastChecked = 'Just now';
+
+            const title = `🔥 Scan Found Deal: ${luckyItem.name}`;
+            const msg = `Now ${formatMoney(updated.finalNzd)} NZD at ${luckyItem.storeName} (Target: ${formatMoney(luckyItem.targetNzd)} NZD)!`;
+            addNotification(title, msg, 'target');
+            showToast(title, msg, 'target');
+          } else {
+            showToast('Scan Complete', 'All tracked items checked across NZ & Overseas stores.', 'info');
+          }
+
+          renderDashboard();
+        }
+      }, 450);
+    }
+
+    // Add Item Modal Controls
+    function openAddModal() {
+      document.getElementById('add-modal').classList.remove('hidden');
+      document.getElementById('add-modal').classList.add('flex');
+      toggleOverseasFormFields();
+    }
+
+    function closeAddModal() {
+      document.getElementById('add-modal').classList.add('hidden');
+      document.getElementById('add-modal').classList.remove('flex');
+    }
+
+    function toggleOverseasFormFields() {
+      const pref = document.getElementById('form-region-pref').value;
+      const box = document.getElementById('overseas-options-box');
+      if (pref === 'NZ') {
+        box.classList.add('opacity-50', 'pointer-events-none');
+      } else {
+        box.classList.remove('opacity-50', 'pointer-events-none');
+      }
+    }
+
+    function handleAddItem(e) {
+      e.preventDefault();
+      const name = document.getElementById('form-name').value.trim();
+      const category = document.getElementById('form-category').value;
+      const regionPref = document.getElementById('form-region-pref').value;
+      const rrpNzd = parseFloat(document.getElementById('form-rrp').value);
+      const targetNzd = parseFloat(document.getElementById('form-target').value);
+      const foreignCurrency = document.getElementById('form-foreign-currency').value;
+      const includeLanded = document.getElementById('form-include-gst').checked;
+      const urlInput = document.getElementById('form-url').value.trim();
+
+      const categoryEmojis = {
+        'Electronics': '📱',
+        'Home & Kitchen': '🏠',
+        'Gaming': '🕹️',
+        'Outdoor & Apparel': '🎒',
+        'Health & Beauty': '✨'
+      };
+
+      // Decide initial best region based on user preference
+      let regionType = 'NZ';
+      if (regionPref === 'OVERSEAS') regionType = 'OVERSEAS';
+      else if (regionPref === 'BOTH') regionType = Math.random() > 0.45 ? 'NZ' : 'OVERSEAS';
+
+      const nzStores = ['PB Tech NZ', 'Mighty Ape NZ', 'Noel Leeming', 'Briscoes NZ', 'JB Hi-Fi NZ'];
+      const overseasStores = {
+        USD: 'Amazon US',
+        AUD: 'Amazon AU',
+        GBP: 'Amazon UK',
+        EUR: 'EU Store'
+      };
+
+      const storeName = regionType === 'NZ'
+        ? nzStores[Math.floor(Math.random() * nzStores.length)]
+        : overseasStores[foreignCurrency];
+
+      const currency = regionType === 'NZ' ? 'NZD' : foreignCurrency;
+      // Start slightly below RRP
+      const initialNzd = Number((rrpNzd * 0.92).toFixed(2));
+      const foreignPrice = currency === 'NZD'
+        ? initialNzd
+        : Number((initialNzd / (fxRates[currency] * (includeLanded ? 1.15 : 1))).toFixed(2));
+
+      const newItem = {
+        id: 'item-' + Date.now(),
+        name,
+        category,
+        emoji: categoryEmojis[category] || '🏷️',
+        regionType,
+        regionPref,
+        storeName,
+        storeUrl: urlInput || (regionType === 'NZ' ? 'https://www.pbtech.co.nz' : 'https://www.amazon.com'),
+        currency,
+        foreignPrice,
+        rrpNzd,
+        targetNzd,
+        includeLanded,
+        shippingNzd: regionType === 'OVERSEAS' ? 22 : 0,
+        nzComparisonStore: regionType === 'OVERSEAS' ? 'PB Tech NZ' : 'Mighty Ape NZ',
+        nzComparisonPriceNzd: rrpNzd,
+        historyNzd: [Math.round(rrpNzd), Math.round(rrpNzd * 0.97), Math.round(rrpNzd * 0.95), Math.round(initialNzd)],
+        lastChecked: 'Just now'
+      };
+
+      trackedItems.unshift(newItem);
+      document.getElementById('add-item-form').reset();
+      closeAddModal();
+      renderDashboard();
+      showToast('Added to Watchlist', `Tracking "${name}" in NZD across ${regionPref === 'BOTH' ? 'NZ & Overseas' : regionPref}.`, 'info');
+    }
+
+    // Remove Item
+    function removeItem(id) {
+      trackedItems = trackedItems.filter(i => i.id !== id);
+      renderDashboard();
+      showToast('Item Removed', 'Stopped watching price alerts for this item.', 'info');
+    }
+
+    // History & Store Breakdown Modal
+    function openHistoryModal(id) {
+      const item = trackedItems.find(i => i.id === id);
+      if (!item) return;
+      const pricing = calculateNzdPricing(item);
+
+      document.getElementById('history-modal-title').textContent = item.name;
+      const body = document.getElementById('history-modal-body');
+
+      body.innerHTML = `
+        <div class="grid grid-cols-3 gap-3 text-center">
+          <div class="p-3 rounded-xl bg-[#06131c] border border-sky-400/20">
+            <span class="text-[11px] text-[#94b8cc] block">Current (NZD)</span>
+            <span class="text-lg font-extrabold text-[#f0f9ff]">${formatMoney(pricing.finalNzd)}</span>
+          </div>
+          <div class="p-3 rounded-xl bg-teal-400/15 border border-teal-400/40">
+            <span class="text-[11px] text-[#2dd4bf] font-bold block">Your Target</span>
+            <span class="text-lg font-extrabold text-[#f0f9ff]">${formatMoney(item.targetNzd)}</span>
+          </div>
+          <div class="p-3 rounded-xl bg-[#06131c] border border-sky-400/20">
+            <span class="text-[11px] text-[#94b8cc] block">Original RRP</span>
+            <span class="text-lg font-extrabold text-[#94b8cc]">${formatMoney(item.rrpNzd)}</span>
+          </div>
+        </div>
+
+        ${item.currency !== 'NZD' ? `
+          <div class="rounded-xl bg-[#06131c] border border-sky-400/25 p-4 space-y-2 text-xs">
+            <h4 class="font-bold text-[#22d3ee]">Overseas → NZD Landed Breakdown</h4>
+            <div class="flex justify-between text-[#94b8cc]">
+              <span>Overseas Store Price (${item.storeName}):</span>
+              <span class="font-semibold text-[#f0f9ff]">${formatMoney(item.foreignPrice, item.currency)} ${item.currency}</span>
+            </div>
+            <div class="flex justify-between text-[#94b8cc]">
+              <span>Converted at 1 ${item.currency} = $${fxRates[item.currency].toFixed(2)} NZD:</span>
+              <span class="font-semibold text-[#f0f9ff]">${formatMoney(pricing.baseNzd)} NZD</span>
+            </div>
+            <div class="flex justify-between text-[#94b8cc]">
+              <span>Estimated 15% NZ GST:</span>
+              <span class="font-semibold text-[#f0f9ff]">${pricing.isLandedApplied ? `+${formatMoney(pricing.gstNzd)} NZD` : '$0.00 (Disabled)'}</span>
+            </div>
+            <div class="flex justify-between text-[#94b8cc]">
+              <span>Estimated International Shipping:</span>
+              <span class="font-semibold text-[#f0f9ff]">${pricing.isLandedApplied ? `+${formatMoney(pricing.shippingNzd)} NZD` : '$0.00 (Disabled)'}</span>
+            </div>
+            <div class="flex justify-between font-extrabold text-[#2dd4bf] pt-2 border-t border-sky-400/20 text-sm">
+              <span>Total Landed Cost in NZD:</span>
+              <span>${formatMoney(pricing.finalNzd)} NZD</span>
+            </div>
+          </div>
+        ` : ''}
+
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-[#94b8cc] mb-2">Recent Price History (NZD)</h4>
+          <div class="flex items-end gap-2 h-28 p-3 rounded-xl bg-[#06131c] border border-sky-400/20">
+            ${item.historyNzd.map((val, idx) => {
+              const maxVal = Math.max(...item.historyNzd);
+              const pct = Math.max(25, Math.round((val / maxVal) * 100));
+              const isLatest = idx === item.historyNzd.length - 1;
+              return `
+                <div class="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                  <span class="text-[10px] font-bold ${isLatest ? 'text-[#2dd4bf]' : 'text-[#94b8cc]'}">$${val}</span>
+                  <div class="w-full rounded-t-md ${isLatest ? 'bg-gradient-to-t from-[#0ea5e9] to-[#2dd4bf]' : 'bg-[#16384d]'}" style="height: ${pct}%"></div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+
+      document.getElementById('history-modal').classList.remove('hidden');
+      document.getElementById('history-modal').classList.add('flex');
+    }
+
+    function closeHistoryModal() {
+      document.getElementById('history-modal').classList.add('hidden');
+      document.getElementById('history-modal').classList.remove('flex');
+    }
+
+    // FX Modal Controls
+    function openFxModal() {
+      const container = document.getElementById('fx-inputs-container');
+      const codes = ['USD', 'AUD', 'GBP', 'EUR'];
+      container.innerHTML = codes.map(code => `
+        <div class="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-[#06131c] border border-sky-400/20">
+          <span class="text-sm font-bold text-[#f0f9ff]">1 ${code} in NZD</span>
+          <div class="relative w-32">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[#94b8cc] text-xs font-bold">$</span>
+            <input type="number" step="0.01" min="0.1" id="fx-input-${code}" value="${fxRates[code].toFixed(2)}" class="w-full pl-7 pr-3 py-1.5 rounded-lg border border-sky-400/25 bg-[#0b1f2d] text-sm font-bold text-right text-[#22d3ee]">
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('fx-modal').classList.remove('hidden');
+      document.getElementById('fx-modal').classList.add('flex');
+    }
+
+    function closeFxModal() {
+      document.getElementById('fx-modal').classList.add('hidden');
+      document.getElementById('fx-modal').classList.remove('flex');
+    }
+
+    function saveFxRates() {
+      ['USD', 'AUD', 'GBP', 'EUR'].forEach(code => {
+        const val = parseFloat(document.getElementById(`fx-input-${code}`).value);
+        if (!isNaN(val) && val > 0) fxRates[code] = val;
+      });
+      renderFxTicker();
+      renderDashboard();
+      closeFxModal();
+      showToast('Exchange Rates Updated', 'All overseas item prices recalculated in NZD.', 'info');
+    }
+
+    function resetFxRates() {
+      fxRates = { ...DEFAULT_FX_RATES };
+      openFxModal();
+      renderFxTicker();
+      renderDashboard();
+    }
+
+    // Notification Drawer & Toast Helpers
+    function renderNotifications() {
+      const unreadCount = notifications.filter(n => n.unread).length;
+      const badge = document.getElementById('notif-badge');
+      badge.textContent = unreadCount;
+      badge.classList.toggle('hidden', unreadCount === 0);
+
+      const list = document.getElementById('notif-list');
+      if (notifications.length === 0) {
+        list.innerHTML = `<p class="text-center text-sm text-[#94b8cc] py-10">No alerts yet. Click "Scan Prices" or "Simulate Drop" to test alerts!</p>`;
+        return;
+      }
+
+      list.innerHTML = notifications.map(n => `
+        <div class="p-3.5 rounded-xl border ${n.unread ? 'bg-[#0b1f2d] border-teal-400/50 shadow-md shadow-teal-950/30' : 'bg-[#0b1f2d]/60 border-sky-400/15'} space-y-1">
+          <div class="flex items-start justify-between gap-2">
+            <h4 class="text-xs font-bold text-[#f0f9ff]">${n.title}</h4>
+            <span class="text-[10px] text-[#94b8cc] shrink-0">${n.time}</span>
+          </div>
+          <p class="text-xs text-[#94b8cc] leading-relaxed">${n.message}</p>
+        </div>
+      `).join('');
+    }
+
+    function addNotification(title, message, type = 'sale') {
+      notifications.unshift({
+        id: 'notif-' + Date.now(),
+        title,
+        message,
+        time: 'Just now',
+        unread: true,
+        type
+      });
+      renderNotifications();
+    }
+
+    function clearNotifications() {
+      notifications.forEach(n => n.unread = false);
+      renderNotifications();
+    }
+
+    function toggleNotifications() {
+      const drawer = document.getElementById('notif-drawer');
+      const backdrop = document.getElementById('notif-drawer-backdrop');
+      const isClosed = drawer.classList.contains('translate-x-full');
+
+      if (isClosed) {
+        drawer.classList.remove('translate-x-full');
+        backdrop.classList.remove('hidden');
+      } else {
+        drawer.classList.add('translate-x-full');
+        backdrop.classList.add('hidden');
+      }
+    }
+
+    function showToast(title, message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const borderClass = type === 'target'
+        ? 'border-teal-400/60 bg-[#0b1f2d] text-[#f0f9ff]'
+        : type === 'sale'
+          ? 'border-cyan-400/60 bg-[#0b1f2d] text-[#f0f9ff]'
+          : 'border-sky-400/35 bg-[#0b1f2d] text-[#f0f9ff]';
+
+      toast.className = `toast-enter pointer-events-auto rounded-2xl border ${borderClass} p-4 shadow-2xl shadow-black/50 flex items-start gap-3`;
+      toast.innerHTML = `
+        <div class="text-lg shrink-0">${type === 'target' ? '🔥' : type === 'sale' ? '🏷️' : '🌊'}</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold text-[#2dd4bf]">${title}</p>
+          <p class="text-xs text-[#f0f9ff]/90 mt-0.5 leading-snug">${message}</p>
+        </div>
+      `;
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(20px)';
+        toast.style.transition = 'all 0.25s ease';
+        setTimeout(() => toast.remove(), 260);
+      }, 4200);
+    }
+
+    function resetFilters() {
+      setRegionFilter('ALL');
+      document.getElementById('status-filter').value = 'ALL';
+      document.getElementById('category-filter').value = 'ALL';
+      document.getElementById('search-input').value = '';
+      renderDashboard();
+    }
+
+    // Initialize Application
+    window.addEventListener('DOMContentLoaded', () => {
+      renderFxTicker();
+      renderNotifications();
+      renderDashboard();
+    });
+  </script>
+</body>
+</html>
