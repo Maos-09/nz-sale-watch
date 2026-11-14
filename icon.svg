@@ -1,19 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-      <defs>
-        <linearGradient id="oceanBg" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#06131c" />
-          <stop offset="100%" stop-color="#0b1f2d" />
-        </linearGradient>
-        <linearGradient id="oceanTag" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#22d3ee" />
-          <stop offset="100%" stop-color="#2dd4bf" />
-        </linearGradient>
-      </defs>
-      <rect width="512" height="512" rx="112" fill="url(#oceanBg)" />
-      <path d="M136 144h128l120 120c12 12 12 32 0 44l-84 84c-12 12-32 12-44 0L136 272V144z" fill="url(#oceanTag)" />
-      <circle cx="192" cy="200" r="20" fill="#06131c" />
-      <path d="M360 116l6 14 14 6-14 6-6 14-6-14-14-6 14-6z" fill="#22d3ee" />
-      <path d="M408 164l5 11 11 5-11 5-5 11-5-11-11-5 11-5z" fill="#f0f9ff" />
-      <path d="M316 156l4 9 9 4-9 4-4 9-4-9-9-4 9-4z" fill="#38bdf8" />
-      <path d="M360 208l5 12 12 5-12 5-5 12-5-12-12-5 12-5z" fill="#2dd4bf" />
-    </svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1f2d" />
+      <stop offset="100%" stop-color="#06131c" />
+    </linearGradient>
+    <linearGradient id="tagGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="100%" stop-color="#2dd4bf" />
+    </linearGradient>
+  </defs>
+  <!-- App Icon Rounded Card Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+  
+  <!-- Price Tag Graphic -->
+  <g transform="translate(96, 96)">
+    <!-- Hole in tag -->
+    <circle cx="110" cy="110" r="28" fill="#06131c" />
+    <!-- Tag Body -->
+    <path d="M110 20 L286 196 C302 212 302 238 286 254 L196 344 C180 360 154 360 138 344 L20 226 V110 C20 60 60 20 110 20 Z" fill="url(#tagGrad)" />
+    <!-- Inner accent dot -->
+    <circle cx="110" cy="110" r="12" fill="#06131c" />
+  </g>
+</svg>
