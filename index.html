@@ -41,7 +41,7 @@
         </div>
         <div>
           <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-            NZ Sale Watch <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-medium border border-cyan-500/30">Fast</span>
+            NZ Sale Watch <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-medium border border-cyan-500/30">Live</span>
           </h1>
           <p id="lastUpdatedText" class="text-xs text-slate-400">Ready</p>
         </div>
@@ -203,7 +203,7 @@
 
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000); // 4-second timeout so it never hangs
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
 
         const response = await fetch(`deals.json?t=${Date.now()}`, { signal: controller.signal });
         clearTimeout(timeoutId);
@@ -213,12 +213,10 @@
         const liveData = await response.json();
         const localItems = JSON.parse(localStorage.getItem('nz_sale_watch_local_watchlist')) || [];
         
-        // Merge cloud deals and local items without duplicates
         const map = new Map();
         [...liveData, ...localItems].forEach(item => map.set(item.name.toLowerCase(), item));
         items = Array.from(map.values());
 
-        // Check for new sales
         items.forEach(item => {
           if (item.storesOnSale && item.storesOnSale.length > 0) {
             const best = item.storesOnSale.reduce((prev, curr) => prev.price < curr.price ? prev : curr);
