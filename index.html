@@ -41,15 +41,15 @@
         </div>
         <div>
           <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-            NZ Sale Watch <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-medium border border-cyan-500/30">Live</span>
+            NZ Sale Watch <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-medium border border-cyan-500/30">Fast</span>
           </h1>
-          <p id="lastUpdatedText" class="text-xs text-slate-400">Syncing live store feeds...</p>
+          <p id="lastUpdatedText" class="text-xs text-slate-400">Ready</p>
         </div>
       </div>
 
       <div class="flex items-center space-x-2 sm:space-x-3">
         <!-- Manual Refresh Button -->
-        <button onclick="fetchLiveDeals(true)" title="Sync Latest Deals" class="p-2 rounded-xl bg-ocean-800/80 hover:bg-ocean-700 text-cyan-300 hover:text-white transition border border-ocean-700/50">
+        <button onclick="fetchLiveDeals(true)" title="Sync Deals" class="p-2 rounded-xl bg-ocean-800/80 hover:bg-ocean-700 text-cyan-300 hover:text-white transition border border-ocean-700/50">
           <i id="refreshIcon" data-lucide="refresh-cw" class="w-5 h-5"></i>
         </button>
 
@@ -185,6 +185,13 @@
     function init() {
       lucide.createIcons();
       updateNotificationsUI();
+      
+      // Load local watchlist instantly so app opens with zero delay
+      const localItems = JSON.parse(localStorage.getItem('nz_sale_watch_local_watchlist')) || [];
+      items = localItems;
+      renderItems();
+
+      // Fetch cloud updates silently in the background
       fetchLiveDeals(false);
     }
 
@@ -192,17 +199,21 @@
       const refreshIcon = document.getElementById('refreshIcon');
       const statusText = document.getElementById('lastUpdatedText');
       if (refreshIcon) refreshIcon.classList.add('animate-spin');
+      if (isManual) statusText.innerText = 'Syncing...';
 
       try {
-        const response = await fetch(`deals.json?t=${Date.now()}`);
-        if (!response.ok) throw new Error('deals.json not found yet');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000); // 4-second timeout so it never hangs
+
+        const response = await fetch(`deals.json?t=${Date.now()}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error('deals.json unavailable');
         
         const liveData = await response.json();
-        
-        // Merge with locally added items
         const localItems = JSON.parse(localStorage.getItem('nz_sale_watch_local_watchlist')) || [];
         
-        // Combine cloud deals and local items without duplicates
+        // Merge cloud deals and local items without duplicates
         const map = new Map();
         [...liveData, ...localItems].forEach(item => map.set(item.name.toLowerCase(), item));
         items = Array.from(map.values());
@@ -226,17 +237,15 @@
         localStorage.setItem('nz_sale_watch_seen_deals', JSON.stringify(seenDeals));
         localStorage.setItem('nz_sale_watch_notifs', JSON.stringify(notifications));
         
-        statusText.innerText = isManual ? 'Synced just now' : 'Cloud synced';
+        statusText.innerText = 'Cloud synced';
         renderItems();
         updateNotificationsUI();
       } catch (err) {
-        console.warn('Using local watchlist:', err);
-        items = JSON.parse(localStorage.getItem('nz_sale_watch_local_watchlist')) || [];
-        statusText.innerText = 'Offline / Local watchlist';
-        renderItems();
+        console.warn('Using local cache:', err);
+        statusText.innerText = 'Local mode';
       } finally {
         if (refreshIcon) {
-          setTimeout(() => refreshIcon.classList.remove('animate-spin'), 500);
+          setTimeout(() => refreshIcon.classList.remove('animate-spin'), 400);
         }
       }
     }
@@ -260,7 +269,6 @@
 
       let localItems = JSON.parse(localStorage.getItem('nz_sale_watch_local_watchlist')) || [];
       
-      // Check if already exists
       if (!localItems.some(i => i.name.toLowerCase() === name.toLowerCase())) {
         localItems.push({
           name,
@@ -272,6 +280,8 @@
       }
 
       closeModal();
+      items = localItems;
+      renderItems();
       fetchLiveDeals(true);
     }
 
@@ -280,7 +290,8 @@
         let localItems = JSON.parse(localStorage.getItem('nz_sale_watch_local_watchlist')) || [];
         localItems = localItems.filter(i => i.name.toLowerCase() !== name.toLowerCase());
         localStorage.setItem('nz_sale_watch_local_watchlist', JSON.stringify(localItems));
-        fetchLiveDeals(true);
+        items = localItems;
+        renderItems();
       }
     }
 
