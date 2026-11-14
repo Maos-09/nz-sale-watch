@@ -41,15 +41,15 @@
         </div>
         <div>
           <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-            NZ Sale Watch <span id="syncStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-medium border border-emerald-500/30">Cloud Synced</span>
+            NZ Sale Watch <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-medium border border-cyan-500/30">Live</span>
           </h1>
-          <p id="lastUpdatedText" class="text-xs text-slate-400">Checking live store feeds...</p>
+          <p id="lastUpdatedText" class="text-xs text-slate-400">Syncing live store feeds...</p>
         </div>
       </div>
 
       <div class="flex items-center space-x-2 sm:space-x-3">
         <!-- Manual Refresh Button -->
-        <button onclick="fetchLiveDeals(true)" title="Sync Latest Cloud Prices" class="p-2 rounded-xl bg-ocean-800/80 hover:bg-ocean-700 text-cyan-300 hover:text-white transition border border-ocean-700/50">
+        <button onclick="fetchLiveDeals(true)" title="Sync Latest Deals" class="p-2 rounded-xl bg-ocean-800/80 hover:bg-ocean-700 text-cyan-300 hover:text-white transition border border-ocean-700/50">
           <i id="refreshIcon" data-lucide="refresh-cw" class="w-5 h-5"></i>
         </button>
 
@@ -136,64 +136,43 @@
 
   </main>
 
-  <!-- Watch New Item Helper Modal -->
+  <!-- Watch New Item Modal -->
   <div id="itemModal" class="hidden fixed inset-0 z-50 bg-ocean-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-ocean-900 border border-ocean-700 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+    <div class="bg-ocean-900 border border-ocean-700 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
       <div class="flex items-center justify-between pb-4 border-b border-ocean-800 mb-5">
         <h2 class="text-lg font-bold text-white flex items-center gap-2">
-          <i data-lucide="radar" class="w-5 h-5 text-cyan-400"></i> Watch New Item in Cloud
+          <i data-lucide="tag" class="w-5 h-5 text-cyan-400"></i> Watch New Item
         </h2>
         <button onclick="closeModal()" class="p-2 text-slate-400 hover:text-white rounded-xl bg-ocean-800/50 hover:bg-ocean-800 transition">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <div class="space-y-4">
-        <p class="text-xs text-slate-300 leading-relaxed">
-          Because your background scraper runs automatically in the cloud via GitHub Actions, new items are added to your <code class="text-cyan-300 bg-ocean-950 px-1.5 py-0.5 rounded">watchlist.json</code> file.
-        </p>
-
+      <form id="watchForm" onsubmit="handleWatchItem(event)" class="space-y-4">
         <div>
           <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Item Name <span class="text-cyan-400">*Required</span></label>
-          <input type="text" id="newItemName" oninput="updateSnippet()" placeholder="e.g. Apple AirPods Pro 2" class="w-full bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+          <input type="text" id="newItemName" required placeholder="e.g. Sony WH-1000XM5, iPhone 15" class="w-full bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Target Price ($ NZD) <span class="text-slate-500 font-normal">Optional</span></label>
-            <input type="number" step="0.01" id="newItemTarget" oninput="updateSnippet()" placeholder="Leave blank for any sale" class="w-full bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Target Price ($) <span class="text-slate-500 font-normal">Optional</span></label>
+            <input type="number" step="0.01" id="newItemTarget" placeholder="e.g. 450" class="w-full bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Region</label>
-            <select id="newItemRegion" onchange="updateSnippet()" class="w-full bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+            <select id="newItemRegion" class="w-full bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
               <option value="nz">New Zealand</option>
               <option value="overseas">Overseas</option>
             </select>
           </div>
         </div>
 
-        <!-- Generated JSON Snippet -->
-        <div class="bg-ocean-950 border border-ocean-800 rounded-2xl p-3">
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="text-[11px] font-semibold text-slate-400">1. Copy this entry:</span>
-            <button type="button" onclick="copySnippet()" id="copyBtn" class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
-              <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy JSON
-            </button>
-          </div>
-          <pre id="jsonSnippet" class="text-xs text-emerald-300 font-mono overflow-x-auto p-2 bg-ocean-900/50 rounded-xl">{
-  "name": "",
-  "target_price": null,
-  "region": "nz"
-}</pre>
+        <div class="flex justify-end space-x-3 pt-4 border-t border-ocean-800">
+          <button type="button" onclick="closeModal()" class="px-5 py-2.5 rounded-xl bg-ocean-800 hover:bg-ocean-700 text-slate-300 text-sm font-semibold transition">Cancel</button>
+          <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-ocean-950 text-sm font-bold shadow-lg shadow-cyan-500/20 transition">Add to Watchlist</button>
         </div>
-
-        <div class="pt-2 flex flex-col sm:flex-row gap-3">
-          <a id="githubWatchlistLink" href="https://github.com" target="_blank" rel="noopener noreferrer" class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-ocean-950 font-bold py-2.5 px-4 rounded-xl text-sm shadow-lg shadow-cyan-500/20 transition">
-            <span>2. Open watchlist.json on GitHub</span>
-            <i data-lucide="external-link" class="w-4 h-4 stroke-[2.5]"></i>
-          </a>
-        </div>
-      </div>
+      </form>
     </div>
   </div>
 
@@ -205,20 +184,8 @@
 
     function init() {
       lucide.createIcons();
-      setupGitHubLink();
       updateNotificationsUI();
       fetchLiveDeals(false);
-    }
-
-    // Automatically point the helper button to the user's GitHub repo watchlist.json
-    function setupGitHubLink() {
-      const host = window.location.hostname;
-      const pathParts = window.location.pathname.split('/').filter(Boolean);
-      if (host.endsWith('github.io') && pathParts.length > 0) {
-        const username = host.split('.')[0];
-        const repo = pathParts[0];
-        document.getElementById('githubWatchlistLink').href = `https://github.com/${username}/${repo}/edit/main/watchlist.json`;
-      }
     }
 
     async function fetchLiveDeals(isManual = false) {
@@ -227,15 +194,20 @@
       if (refreshIcon) refreshIcon.classList.add('animate-spin');
 
       try {
-        // Cache-busting timestamp ensures GitHub Pages serves the newest deals.json
         const response = await fetch(`deals.json?t=${Date.now()}`);
         if (!response.ok) throw new Error('deals.json not found yet');
         
         const liveData = await response.json();
-        items = liveData;
+        
+        // Merge with locally added items
+        const localItems = JSON.parse(localStorage.getItem('nz_sale_watch_local_watchlist')) || [];
+        
+        // Combine cloud deals and local items without duplicates
+        const map = new Map();
+        [...liveData, ...localItems].forEach(item => map.set(item.name.toLowerCase(), item));
+        items = Array.from(map.values());
 
-        // Check for newly discovered sales to trigger in-app notifications
-        let newAlertsCount = 0;
+        // Check for new sales
         items.forEach(item => {
           if (item.storesOnSale && item.storesOnSale.length > 0) {
             const best = item.storesOnSale.reduce((prev, curr) => prev.price < curr.price ? prev : curr);
@@ -245,9 +217,8 @@
               seenDeals[dealSignature] = true;
               addNotification(
                 item.name,
-                `On sale for $${best.price.toFixed(2)} NZD at ${best.name} (${item.storesOnSale.length} store${item.storesOnSale.length > 1 ? 's' : ''} total)!`
+                `On sale for $${best.price.toFixed(2)} NZD at ${best.name}!`
               );
-              newAlertsCount++;
             }
           }
         });
@@ -255,13 +226,14 @@
         localStorage.setItem('nz_sale_watch_seen_deals', JSON.stringify(seenDeals));
         localStorage.setItem('nz_sale_watch_notifs', JSON.stringify(notifications));
         
-        statusText.innerText = isManual ? 'Synced just now with live store data' : 'Auto-synced with cloud scraper';
+        statusText.innerText = isManual ? 'Synced just now' : 'Cloud synced';
         renderItems();
         updateNotificationsUI();
       } catch (err) {
-        console.warn('Waiting for first GitHub Action run:', err);
-        statusText.innerText = 'Run GitHub Action once to populate live deals';
-        renderEmptySetupState();
+        console.warn('Using local watchlist:', err);
+        items = JSON.parse(localStorage.getItem('nz_sale_watch_local_watchlist')) || [];
+        statusText.innerText = 'Offline / Local watchlist';
+        renderItems();
       } finally {
         if (refreshIcon) {
           setTimeout(() => refreshIcon.classList.remove('animate-spin'), 500);
@@ -271,10 +243,7 @@
 
     function openModal() {
       document.getElementById('itemModal').classList.remove('hidden');
-      document.getElementById('newItemName').value = '';
-      document.getElementById('newItemTarget').value = '';
-      document.getElementById('newItemRegion').value = 'nz';
-      updateSnippet();
+      document.getElementById('watchForm').reset();
       lucide.createIcons();
     }
 
@@ -282,31 +251,37 @@
       document.getElementById('itemModal').classList.add('hidden');
     }
 
-    function updateSnippet() {
-      const name = document.getElementById('newItemName').value.trim() || 'Item Name Here';
+    function handleWatchItem(e) {
+      e.preventDefault();
+      const name = document.getElementById('newItemName').value.trim();
       const targetVal = document.getElementById('newItemTarget').value;
-      const target = targetVal ? parseFloat(targetVal) : null;
+      const targetPrice = targetVal ? parseFloat(targetVal) : null;
       const region = document.getElementById('newItemRegion').value;
 
-      const obj = {
-        name: name,
-        target_price: target,
-        region: region
-      };
-      document.getElementById('jsonSnippet').innerText = JSON.stringify(obj, null, 2);
+      let localItems = JSON.parse(localStorage.getItem('nz_sale_watch_local_watchlist')) || [];
+      
+      // Check if already exists
+      if (!localItems.some(i => i.name.toLowerCase() === name.toLowerCase())) {
+        localItems.push({
+          name,
+          target_price: targetPrice,
+          region,
+          storesOnSale: []
+        });
+        localStorage.setItem('nz_sale_watch_local_watchlist', JSON.stringify(localItems));
+      }
+
+      closeModal();
+      fetchLiveDeals(true);
     }
 
-    function copySnippet() {
-      const text = document.getElementById('jsonSnippet').innerText;
-      navigator.clipboard.writeText(text).then(() => {
-        const btn = document.getElementById('copyBtn');
-        btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i> Copied!`;
-        lucide.createIcons();
-        setTimeout(() => {
-          btn.innerHTML = `<i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy JSON`;
-          lucide.createIcons();
-        }, 2000);
-      });
+    function deleteItem(name) {
+      if (confirm(`Stop watching "${name}"?`)) {
+        let localItems = JSON.parse(localStorage.getItem('nz_sale_watch_local_watchlist')) || [];
+        localItems = localItems.filter(i => i.name.toLowerCase() !== name.toLowerCase());
+        localStorage.setItem('nz_sale_watch_local_watchlist', JSON.stringify(localItems));
+        fetchLiveDeals(true);
+      }
     }
 
     function addNotification(itemName, message) {
@@ -379,22 +354,6 @@
       `).join('');
     }
 
-    function renderEmptySetupState() {
-      const grid = document.getElementById('itemsGrid');
-      grid.innerHTML = `
-        <div class="col-span-full py-14 px-6 text-center bg-ocean-900/40 border border-ocean-800 rounded-3xl max-w-2xl mx-auto">
-          <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mx-auto mb-4">
-            <i data-lucide="cloud-lightning" class="w-8 h-8"></i>
-          </div>
-          <h3 class="text-lg font-bold text-white">Ready for Your First Cloud Scan</h3>
-          <p class="text-xs text-slate-300 mt-2 leading-relaxed">
-            Your app is now connected to your background GitHub scraper. Once you add <code class="text-cyan-300">watchlist.json</code>, <code class="text-cyan-300">scraper.py</code>, and run your GitHub Action once, live store prices and direct sale links will automatically appear right here!
-          </p>
-        </div>
-      `;
-      lucide.createIcons();
-    }
-
     function renderItems() {
       const grid = document.getElementById('itemsGrid');
       const statusFilter = document.getElementById('statusFilter').value;
@@ -419,8 +378,8 @@
             <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mx-auto mb-4">
               <i data-lucide="package-open" class="w-8 h-8"></i>
             </div>
-            <h3 class="text-base font-semibold text-white">No matching items</h3>
-            <p class="text-xs text-slate-400 mt-1">Adjust your status/region filter or add a new item to watchlist.json.</p>
+            <h3 class="text-base font-semibold text-white">No items watched yet</h3>
+            <p class="text-xs text-slate-400 mt-1">Click "Watch Item" above to start tracking products instantly.</p>
           </div>
         `;
         lucide.createIcons();
@@ -429,11 +388,7 @@
 
       grid.innerHTML = filtered.map((item) => {
         const hasSale = item.storesOnSale && item.storesOnSale.length > 0;
-
-        // Sort stores lowest price first
-        const sortedStores = hasSale 
-          ? [...item.storesOnSale].sort((a, b) => a.price - b.price) 
-          : [];
+        const sortedStores = hasSale ? [...item.storesOnSale].sort((a, b) => a.price - b.price) : [];
 
         const mediaHtml = item.image 
           ? `<img src="${item.image}" alt="${item.name}" class="w-16 h-16 rounded-2xl object-contain bg-white p-1.5 border border-ocean-700 shrink-0">`
@@ -469,7 +424,7 @@
           salesListHtml = `
             <div class="mt-4 pt-4 border-t border-ocean-800/80">
               <div class="flex items-center justify-between text-xs text-slate-400">
-                <span>Cloud Status</span>
+                <span>Status</span>
                 <span class="text-cyan-300 font-medium flex items-center gap-1.5">
                   <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> Watching for sales...
                 </span>
@@ -485,15 +440,20 @@
         return `
           <div class="item-card bg-ocean-900/60 border ${hasSale ? 'border-emerald-500/30' : 'border-ocean-800'} rounded-3xl p-5 shadow-xl flex flex-col justify-between transition" data-name="${item.name}">
             <div>
-              <div class="flex items-start space-x-3.5 mb-3">
-                ${mediaHtml}
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-1.5 flex-wrap mb-1">
-                    ${overseasBadge}
-                    ${item.targetPrice ? `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-ocean-800 text-cyan-300">Target: $${item.targetPrice.toFixed(2)}</span>` : ''}
+              <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="flex items-center space-x-3.5 min-w-0 flex-1">
+                  ${mediaHtml}
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 flex-wrap mb-1">
+                      ${overseasBadge}
+                      ${item.target_price ? `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-ocean-800 text-cyan-300">Target: $${item.target_price.toFixed(2)}</span>` : ''}
+                    </div>
+                    <h3 class="font-bold text-white text-base leading-snug break-words">${item.name}</h3>
                   </div>
-                  <h3 class="font-bold text-white text-base leading-snug break-words">${item.name}</h3>
                 </div>
+                <button onclick="deleteItem('${item.name.replace(/'/g, "\\'")}')" title="Stop Watching" class="p-2 text-rose-400 hover:text-rose-300 rounded-xl bg-ocean-800/50 hover:bg-ocean-800 transition shrink-0">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
               </div>
 
               ${salesListHtml}
