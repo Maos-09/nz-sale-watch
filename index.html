@@ -41,9 +41,9 @@
         </div>
         <div>
           <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-            NZ Sale Watch <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-medium border border-cyan-500/30">NZ Only</span>
+            NZ Sale Watch <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-medium border border-cyan-500/30">Live NZ</span>
           </h1>
-          <p class="text-xs text-slate-400">Scanning New Zealand stores</p>
+          <p class="text-xs text-slate-400">Real-time New Zealand store scanner</p>
         </div>
       </div>
 
@@ -104,7 +104,7 @@
     <div class="bg-ocean-900 border border-ocean-700 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
       <div class="flex items-center justify-between pb-4 border-b border-ocean-800 mb-5">
         <h2 class="text-lg font-bold text-white flex items-center gap-2">
-          <i data-lucide="tag" class="w-5 h-5 text-cyan-400"></i> Watch New Item (NZ)
+          <i data-lucide="tag" class="w-5 h-5 text-cyan-400"></i> Watch New Item (NZ Live)
         </h2>
         <button onclick="closeModal()" class="p-2 text-slate-400 hover:text-white rounded-xl bg-ocean-800/50 hover:bg-ocean-800 transition">
           <i data-lucide="x" class="w-5 h-5"></i>
@@ -115,7 +115,7 @@
         <div>
           <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Item Name <span class="text-cyan-400">*Required</span></label>
           <input type="text" id="newItemName" required placeholder="e.g. Sony WH-1000XM5, iPhone 15" class="w-full bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
-          <p class="text-[11px] text-slate-400 mt-1">Scans all NZ stores automatically.</p>
+          <p class="text-[11px] text-slate-400 mt-1">Scans live New Zealand stores automatically.</p>
         </div>
 
         <div>
@@ -125,7 +125,7 @@
 
         <div class="flex justify-end space-x-3 pt-4 border-t border-ocean-800">
           <button type="button" onclick="closeModal()" class="px-5 py-2.5 rounded-xl bg-ocean-800 hover:bg-ocean-700 text-slate-300 text-sm font-semibold transition">Cancel</button>
-          <button type="submit" id="submitBtn" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-ocean-950 text-sm font-bold shadow-lg shadow-cyan-500/20 transition">Search NZ Stores</button>
+          <button type="submit" id="submitBtn" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-ocean-950 text-sm font-bold shadow-lg shadow-cyan-500/20 transition">Fetch Live Prices</button>
         </div>
       </form>
     </div>
@@ -133,7 +133,10 @@
 
   <!-- JavaScript Application Logic -->
   <script>
-    let items = JSON.parse(localStorage.getItem('nz_sale_watch_items_v2')) || [];
+    // PASTE YOUR FREE SERPAPI KEY HERE:
+    const SERPAPI_KEY = 'YOUR_SERPAPI_KEY_HERE';
+
+    let items = JSON.parse(localStorage.getItem('nz_sale_watch_live_v3')) || [];
 
     function init() {
       lucide.createIcons();
@@ -141,7 +144,7 @@
     }
 
     function saveToStorage() {
-      localStorage.setItem('nz_sale_watch_items_v2', JSON.stringify(items));
+      localStorage.setItem('nz_sale_watch_live_v3', JSON.stringify(items));
       renderItems();
     }
 
@@ -155,6 +158,7 @@
       document.getElementById('itemModal').classList.add('hidden');
     }
 
+    // Fetch real live NZ store prices via SerpApi Google Shopping NZ
     async function handleWatchItem(e) {
       e.preventDefault();
       const name = document.getElementById('newItemName').value.trim();
@@ -162,46 +166,64 @@
       const targetPrice = targetVal ? parseFloat(targetVal) : null;
       const submitBtn = document.getElementById('submitBtn');
 
-      submitBtn.innerHTML = `Scanning NZ stores...`;
+      if (SERPAPI_KEY === 'YOUR_SERPAPI_KEY_HERE') {
+        alert('Please paste your SerpApi key into the code first!');
+        return;
+      }
+
+      submitBtn.innerHTML = `Querying Live NZ Stores...`;
       submitBtn.disabled = true;
 
-      setTimeout(() => {
-        const queryEncoded = encodeURIComponent(name);
-        
-        // Simulated live results from top NZ retailers
-        const nzStores = [
-          {
-            name: 'PB Tech NZ',
-            price: Math.floor(Math.random() * 200) + 499,
-            link: `https://www.pbtech.co.nz/search?search=${queryEncoded}`
-          },
-          {
-            name: 'Noel Leeming',
-            price: Math.floor(Math.random() * 220) + 519,
-            link: `https://www.noelleeming.co.nz/search?q=${queryEncoded}`
-          },
-          {
-            name: 'Mighty Ape',
-            price: Math.floor(Math.random() * 180) + 489,
-            link: `https://www.mightyape.co.nz/search?q=${queryEncoded}`
-          }
-        ];
+      try {
+        // We use a CORS proxy or direct endpoint depending on browser limits; SerpApi supports browser fetch via JSONP or direct GET if allowed, or we query via proxy.
+        // To ensure 100% reliable browser fetching without CORS blocks, we use AllOrigins proxy wrapper around SerpApi.
+        const serpUrl = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(name)}&google_domain=google.co.nz&gl=nz&hl=en&api_key=${SERPAPI_KEY}`;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(serpUrl)}`;
 
-        const activeStores = nzStores.slice(0, Math.floor(Math.random() * 2) + 1);
+        const res = await fetch(proxyUrl);
+        const data = await res.json();
+        const parsed = JSON.parse(data.contents);
+        const shoppingResults = parsed.shopping_results || [];
+
+        let storesOnSale = [];
+        let productImage = '';
+
+        shoppingResults.slice(0, 6).forEach(offer => {
+          if (!productImage && offer.thumbnail) {
+            productImage = offer.thumbnail;
+          }
+          const price = offer.extracted_price;
+          const storeName = offer.source;
+          const link = offer.link || offer.product_link;
+
+          if (price && storeName && link) {
+            if (targetPrice === null || price <= targetPrice) {
+              storesOnSale.push({
+                name: storeName,
+                price: parseFloat(price),
+                link: link
+              });
+            }
+          }
+        });
 
         const newItem = {
           name,
           target_price: targetPrice,
-          storesOnSale: activeStores
+          image: productImage,
+          storesOnSale: storesOnSale
         };
 
         items.unshift(newItem);
         saveToStorage();
-
-        submitBtn.innerHTML = `Search NZ Stores`;
-        submitBtn.disabled = false;
         closeModal();
-      }, 700);
+      } catch (err) {
+        console.error('Live search error:', err);
+        alert('Could not fetch live prices. Please check your SerpApi key or connection.');
+      } finally {
+        submitBtn.innerHTML = `Fetch Live Prices`;
+        submitBtn.disabled = false;
+      }
     }
 
     function deleteItem(index) {
@@ -234,7 +256,7 @@
               <i data-lucide="package-open" class="w-8 h-8"></i>
             </div>
             <h3 class="text-base font-semibold text-white">No items watched yet</h3>
-            <p class="text-xs text-slate-400 mt-1">Click "Watch Item" above to scan NZ stores instantly.</p>
+            <p class="text-xs text-slate-400 mt-1">Click "Watch Item" above to scan live NZ stores instantly.</p>
           </div>
         `;
         lucide.createIcons();
@@ -245,12 +267,16 @@
         const hasSale = item.storesOnSale && item.storesOnSale.length > 0;
         const sortedStores = hasSale ? [...item.storesOnSale].sort((a, b) => a.price - b.price) : [];
 
+        const mediaHtml = item.image 
+          ? `<img src="${item.image}" alt="${item.name}" class="w-16 h-16 rounded-2xl object-contain bg-white p-1.5 border border-ocean-700 shrink-0">`
+          : `<div class="w-16 h-16 rounded-2xl bg-ocean-800 border border-ocean-700 flex items-center justify-center text-cyan-400 shrink-0"><i data-lucide="tag" class="w-7 h-7"></i></div>`;
+
         let salesListHtml = '';
         if (hasSale) {
           salesListHtml = `
             <div class="mt-4 pt-4 border-t border-ocean-800/80 space-y-2">
               <p class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> On Sale at ${sortedStores.length} NZ Store${sortedStores.length > 1 ? 's' : ''}:
+                <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Found at ${sortedStores.length} NZ Store${sortedStores.length > 1 ? 's' : ''}:
               </p>
               <div class="space-y-2">
                 ${sortedStores.map((s, idx) => `
@@ -258,12 +284,12 @@
                     <div class="pr-2">
                       <div class="flex items-center gap-1.5">
                         <span class="text-xs font-semibold text-white">${s.name}</span>
-                        ${idx === 0 ? '<span class="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">Best NZ</span>' : ''}
+                        ${idx === 0 ? '<span class="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">Best Price</span>' : ''}
                       </div>
                       <span class="text-sm font-bold text-emerald-400">$${s.price.toFixed(2)} NZD</span>
                     </div>
                     <a href="${s.link}" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-1.5 bg-emerald-500 hover:bg-emerald-400 text-ocean-950 font-bold px-3 py-2 rounded-lg text-xs shadow-md shadow-emerald-500/20 transition shrink-0">
-                      <span>View Sale</span>
+                      <span>View Store</span>
                       <i data-lucide="external-link" class="w-3.5 h-3.5 stroke-[2.5]"></i>
                     </a>
                   </div>
@@ -276,9 +302,7 @@
             <div class="mt-4 pt-4 border-t border-ocean-800/80">
               <div class="flex items-center justify-between text-xs text-slate-400">
                 <span>Status</span>
-                <span class="text-cyan-300 font-medium flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> Scanning NZ stores...
-                </span>
+                <span class="text-amber-400 font-medium">No live stores matched target</span>
               </div>
             </div>
           `;
@@ -287,20 +311,24 @@
         return `
           <div class="item-card bg-ocean-900/60 border ${hasSale ? 'border-emerald-500/30' : 'border-ocean-800'} rounded-3xl p-5 shadow-xl flex flex-col justify-between transition" data-name="${item.name}">
             <div>
-              <div class="flex items-start justify-between gap-3 mb-3">
+              <div class="flex items-start space-x-3.5 mb-3">
+                ${mediaHtml}
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-1.5 flex-wrap mb-1">
-                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">NZ Only</span>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">NZ Live</span>
                     ${item.target_price ? `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-ocean-800 text-cyan-300">Target: $${item.target_price.toFixed(2)}</span>` : ''}
                   </div>
                   <h3 class="font-bold text-white text-base leading-snug break-words">${item.name}</h3>
                 </div>
-                <button onclick="deleteItem(${item.originalIndex})" title="Stop Watching" class="p-2 text-rose-400 hover:text-rose-300 rounded-xl bg-ocean-800/50 hover:bg-ocean-800 transition shrink-0">
-                  <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>
               </div>
 
               ${salesListHtml}
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-ocean-800/50 flex justify-end">
+              <button onclick="deleteItem(${item.originalIndex})" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 transition">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Remove item
+              </button>
             </div>
           </div>
         `;
