@@ -1,0 +1,31 @@
+name: Check NZ Sales
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Runs automatically every 6 hours
+  workflow_dispatch:         # Allows you to click "Run workflow" manually anytime
+
+permissions:
+  contents: write
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - name: Run Live Sale Scraper
+        env:
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python scraper.py
+      - name: Update App Data
+        run: |
+          git config user.name "Sale Watch Bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add deals.json
+          git commit -m "Update live sale prices" || exit 0
+          git push
