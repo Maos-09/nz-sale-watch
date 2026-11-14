@@ -41,13 +41,18 @@
         </div>
         <div>
           <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-            NZ Sale Watch <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-medium border border-cyan-500/30">Auto-Scraper</span>
+            NZ Sale Watch <span id="syncStatusBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-medium border border-emerald-500/30">Cloud Synced</span>
           </h1>
-          <p class="text-xs text-slate-400">Type an item name & auto-find sales</p>
+          <p id="lastUpdatedText" class="text-xs text-slate-400">Checking live store feeds...</p>
         </div>
       </div>
 
-      <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <!-- Manual Refresh Button -->
+        <button onclick="fetchLiveDeals(true)" title="Sync Latest Cloud Prices" class="p-2 rounded-xl bg-ocean-800/80 hover:bg-ocean-700 text-cyan-300 hover:text-white transition border border-ocean-700/50">
+          <i id="refreshIcon" data-lucide="refresh-cw" class="w-5 h-5"></i>
+        </button>
+
         <!-- Notification Bell -->
         <div class="relative">
           <button onclick="toggleNotifications()" class="relative p-2 rounded-xl bg-ocean-800/80 hover:bg-ocean-700 text-slate-300 hover:text-white transition border border-ocean-700/50">
@@ -69,9 +74,9 @@
           </div>
         </div>
 
-        <button onclick="openModal()" class="flex items-center space-x-2 bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-ocean-950 font-semibold px-4 py-2 rounded-xl shadow-lg shadow-cyan-500/20 transition transform active:scale-95">
+        <button onclick="openModal()" class="flex items-center space-x-2 bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-ocean-950 font-semibold px-3.5 sm:px-4 py-2 rounded-xl shadow-lg shadow-cyan-500/20 transition transform active:scale-95">
           <i data-lucide="plus" class="w-5 h-5 stroke-[2.5]"></i>
-          <span>Track Item</span>
+          <span class="hidden sm:inline">Watch Item</span>
         </button>
       </div>
     </div>
@@ -84,7 +89,7 @@
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
       <div class="bg-ocean-900/60 border border-ocean-800 rounded-2xl p-4 flex items-center justify-between">
         <div>
-          <p class="text-xs text-slate-400 font-medium">Tracked Items</p>
+          <p class="text-xs text-slate-400 font-medium">Watched Items</p>
           <h3 id="statTotal" class="text-2xl font-bold text-white mt-1">0</h3>
         </div>
         <div class="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
@@ -105,11 +110,11 @@
       <!-- Filters -->
       <div class="md:col-span-2 bg-ocean-900/60 border border-ocean-800 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-4">
         <div class="flex items-center space-x-2">
-          <span class="text-xs text-slate-400 font-medium">Filter Status:</span>
+          <span class="text-xs text-slate-400 font-medium">Status:</span>
           <select id="statusFilter" onchange="renderItems()" class="bg-ocean-800 border border-ocean-700 text-xs text-slate-200 rounded-xl px-3 py-2 outline-none focus:border-cyan-500">
             <option value="all">All Statuses</option>
             <option value="sale">On Sale Now</option>
-            <option value="tracking">Tracking</option>
+            <option value="tracking">Watching</option>
           </select>
         </div>
 
@@ -131,181 +136,145 @@
 
   </main>
 
-  <!-- Add/Edit Item Modal -->
+  <!-- Watch New Item Helper Modal -->
   <div id="itemModal" class="hidden fixed inset-0 z-50 bg-ocean-950/80 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-ocean-900 border border-ocean-700 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-      <div class="flex items-center justify-between pb-4 border-b border-ocean-800 mb-6 sticky top-0 bg-ocean-900 z-10">
-        <h2 id="modalTitle" class="text-lg font-bold text-white flex items-center gap-2">
-          <i data-lucide="plus-circle" class="w-5 h-5 text-cyan-400"></i> Track New Item
+      <div class="flex items-center justify-between pb-4 border-b border-ocean-800 mb-5">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <i data-lucide="radar" class="w-5 h-5 text-cyan-400"></i> Watch New Item in Cloud
         </h2>
         <button onclick="closeModal()" class="p-2 text-slate-400 hover:text-white rounded-xl bg-ocean-800/50 hover:bg-ocean-800 transition">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <form id="itemForm" onsubmit="saveItem(event)" class="space-y-4">
-        <input type="hidden" id="editIndex" value="-1">
+      <div class="space-y-4">
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Because your background scraper runs automatically in the cloud via GitHub Actions, new items are added to your <code class="text-cyan-300 bg-ocean-950 px-1.5 py-0.5 rounded">watchlist.json</code> file.
+        </p>
 
         <div>
           <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Item Name <span class="text-cyan-400">*Required</span></label>
-          <div class="flex gap-2">
-            <input type="text" id="itemName" required placeholder="e.g. iPhone 15 Pro, Sony WH-1000XM5" class="flex-1 bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
-            <button type="button" onclick="autoScrapeItem()" id="scrapeBtn" class="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap">
-              <i data-lucide="search" class="w-4 h-4"></i> Auto-Find Sales
+          <input type="text" id="newItemName" oninput="updateSnippet()" placeholder="e.g. Apple AirPods Pro 2" class="w-full bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Target Price ($ NZD) <span class="text-slate-500 font-normal">Optional</span></label>
+            <input type="number" step="0.01" id="newItemTarget" oninput="updateSnippet()" placeholder="Leave blank for any sale" class="w-full bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Region</label>
+            <select id="newItemRegion" onchange="updateSnippet()" class="w-full bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+              <option value="nz">New Zealand</option>
+              <option value="overseas">Overseas</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Generated JSON Snippet -->
+        <div class="bg-ocean-950 border border-ocean-800 rounded-2xl p-3">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-semibold text-slate-400">1. Copy this entry:</span>
+            <button type="button" onclick="copySnippet()" id="copyBtn" class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy JSON
             </button>
           </div>
-          <p id="scrapeStatus" class="text-[11px] text-slate-400 mt-1">Type item name & click Auto-Find Sales to scan store prices & direct links.</p>
+          <pre id="jsonSnippet" class="text-xs text-emerald-300 font-mono overflow-x-auto p-2 bg-ocean-900/50 rounded-xl">{
+  "name": "",
+  "target_price": null,
+  "region": "nz"
+}</pre>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Category <span class="text-slate-500 font-normal">Optional</span></label>
-            <select id="itemCategory" class="w-full bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
-              <option value="Electronics">Electronics</option>
-              <option value="Clothing">Clothing & Fashion</option>
-              <option value="Home & Living">Home & Living</option>
-              <option value="Outdoor">Outdoor & Sports</option>
-              <option value="Beauty">Beauty & Health</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Region <span class="text-slate-500 font-normal">Optional</span></label>
-            <select id="itemRegion" class="w-full bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
-              <option value="nz">New Zealand</option>
-              <option value="overseas">Overseas (Converted to NZD)</option>
-            </select>
-          </div>
+        <div class="pt-2 flex flex-col sm:flex-row gap-3">
+          <a id="githubWatchlistLink" href="https://github.com" target="_blank" rel="noopener noreferrer" class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-ocean-950 font-bold py-2.5 px-4 rounded-xl text-sm shadow-lg shadow-cyan-500/20 transition">
+            <span>2. Open watchlist.json on GitHub</span>
+            <i data-lucide="external-link" class="w-4 h-4 stroke-[2.5]"></i>
+          </a>
         </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Baseline RRP <span class="text-slate-500 font-normal">Optional</span></label>
-            <input type="number" step="0.01" id="itemBaseline" placeholder="e.g. 1499" class="w-full bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Target Price <span class="text-slate-500 font-normal">Optional</span></label>
-            <input type="number" step="0.01" id="itemTarget" placeholder="e.g. 1299" class="w-full bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Item Image URL <span class="text-slate-500 font-normal">Optional</span></label>
-          <input type="url" id="itemImage" placeholder="https://example.com/item-photo.jpg" class="w-full bg-ocean-800 border border-ocean-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
-        </div>
-
-        <!-- Stores Offering Sales Setup (Auto-filled or manual) -->
-        <div class="pt-2 border-t border-ocean-800">
-          <div class="flex items-center justify-between mb-2">
-            <label class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Stores with Sale <span class="text-slate-500 font-normal">Auto-populated</span></label>
-            <button type="button" onclick="addStoreRow()" class="text-xs text-cyan-400 hover:underline flex items-center gap-1">+ Add Store Manually</button>
-          </div>
-          <div id="storeRowsContainer" class="space-y-2 max-h-40 overflow-y-auto pr-1">
-            <!-- Dynamically added store rows -->
-          </div>
-        </div>
-
-        <div class="flex justify-end space-x-3 pt-4 border-t border-ocean-800">
-          <button type="button" onclick="closeModal()" class="px-5 py-2.5 rounded-xl bg-ocean-800 hover:bg-ocean-700 text-slate-300 text-sm font-semibold transition">Cancel</button>
-          <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-ocean-950 text-sm font-bold shadow-lg shadow-cyan-500/20 transition">Save Item</button>
-        </div>
-      </form>
+      </div>
     </div>
   </div>
 
   <!-- JavaScript Application Logic -->
   <script>
-    let items = JSON.parse(localStorage.getItem('nz_sale_watch_items')) || [];
+    let items = [];
     let notifications = JSON.parse(localStorage.getItem('nz_sale_watch_notifs')) || [];
-
-    const categoryIcons = {
-      'Electronics': 'smartphone',
-      'Clothing': 'shirt',
-      'Home & Living': 'home',
-      'Outdoor': 'compass',
-      'Beauty': 'sparkles',
-      'Other': 'package'
-    };
+    let seenDeals = JSON.parse(localStorage.getItem('nz_sale_watch_seen_deals')) || {};
 
     function init() {
       lucide.createIcons();
-      renderItems();
+      setupGitHubLink();
       updateNotificationsUI();
+      fetchLiveDeals(false);
     }
 
-    function saveToStorage() {
-      localStorage.setItem('nz_sale_watch_items', JSON.stringify(items));
-      localStorage.setItem('nz_sale_watch_notifs', JSON.stringify(notifications));
-      renderItems();
-      updateNotificationsUI();
-    }
-
-    // Automated Scraper Simulation using public shopping query patterns
-    async function autoScrapeItem() {
-      const nameInput = document.getElementById('itemName').value.trim();
-      const statusEl = document.getElementById('scrapeStatus');
-      if (!nameInput) {
-        alert('Please enter an item name first before running Auto-Find Sales.');
-        return;
+    // Automatically point the helper button to the user's GitHub repo watchlist.json
+    function setupGitHubLink() {
+      const host = window.location.hostname;
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      if (host.endsWith('github.io') && pathParts.length > 0) {
+        const username = host.split('.')[0];
+        const repo = pathParts[0];
+        document.getElementById('githubWatchlistLink').href = `https://github.com/${username}/${repo}/edit/main/watchlist.json`;
       }
+    }
 
-      statusEl.innerHTML = `<span class="text-cyan-400 animate-pulse">Scanning NZ & overseas stores for "${nameInput}"...</span>`;
-      
-      // Simulate intelligent search query resolution to top merchant product pages with direct links
-      setTimeout(() => {
-        const queryEncoded = encodeURIComponent(nameInput);
-        const simulatedStores = [
-          {
-            name: 'PB Tech NZ',
-            price: Math.floor(Math.random() * 300) + 799,
-            link: `https://www.pbtech.co.nz/search?search=${queryEncoded}`
-          },
-          {
-            name: 'Noel Leeming',
-            price: Math.floor(Math.random() * 300) + 819,
-            link: `https://www.noelleeming.co.nz/search?q=${queryEncoded}`
-          },
-          {
-            name: 'Mighty Ape',
-            price: Math.floor(Math.random() * 250) + 789,
-            link: `https://www.mightyape.co.nz/search?q=${queryEncoded}`
+    async function fetchLiveDeals(isManual = false) {
+      const refreshIcon = document.getElementById('refreshIcon');
+      const statusText = document.getElementById('lastUpdatedText');
+      if (refreshIcon) refreshIcon.classList.add('animate-spin');
+
+      try {
+        // Cache-busting timestamp ensures GitHub Pages serves the newest deals.json
+        const response = await fetch(`deals.json?t=${Date.now()}`);
+        if (!response.ok) throw new Error('deals.json not found yet');
+        
+        const liveData = await response.json();
+        items = liveData;
+
+        // Check for newly discovered sales to trigger in-app notifications
+        let newAlertsCount = 0;
+        items.forEach(item => {
+          if (item.storesOnSale && item.storesOnSale.length > 0) {
+            const best = item.storesOnSale.reduce((prev, curr) => prev.price < curr.price ? prev : curr);
+            const dealSignature = `${item.name}-${best.name}-${best.price}`;
+
+            if (!seenDeals[dealSignature]) {
+              seenDeals[dealSignature] = true;
+              addNotification(
+                item.name,
+                `On sale for $${best.price.toFixed(2)} NZD at ${best.name} (${item.storesOnSale.length} store${item.storesOnSale.length > 1 ? 's' : ''} total)!`
+              );
+              newAlertsCount++;
+            }
           }
-        ];
+        });
 
-        // Clear existing rows and populate with scraped results
-        const container = document.getElementById('storeRowsContainer');
-        container.innerHTML = '';
-        simulatedStores.forEach(s => addStoreRow(s.name, s.price, s.link));
-
-        statusEl.innerHTML = `<span class="text-emerald-400 font-semibold">✓ Found 3 active store sales with direct product links!</span>`;
-      }, 1200);
+        localStorage.setItem('nz_sale_watch_seen_deals', JSON.stringify(seenDeals));
+        localStorage.setItem('nz_sale_watch_notifs', JSON.stringify(notifications));
+        
+        statusText.innerText = isManual ? 'Synced just now with live store data' : 'Auto-synced with cloud scraper';
+        renderItems();
+        updateNotificationsUI();
+      } catch (err) {
+        console.warn('Waiting for first GitHub Action run:', err);
+        statusText.innerText = 'Run GitHub Action once to populate live deals';
+        renderEmptySetupState();
+      } finally {
+        if (refreshIcon) {
+          setTimeout(() => refreshIcon.classList.remove('animate-spin'), 500);
+        }
+      }
     }
 
-    function openModal(editIndex = -1) {
+    function openModal() {
       document.getElementById('itemModal').classList.remove('hidden');
-      const container = document.getElementById('storeRowsContainer');
-      container.innerHTML = '';
-      document.getElementById('scrapeStatus').innerText = 'Type item name & click Auto-Find Sales to scan store prices & direct links.';
-
-      if (editIndex > -1) {
-        document.getElementById('modalTitle').innerHTML = `<i data-lucide="edit-3" class="w-5 h-5 text-cyan-400"></i> Edit Tracked Item`;
-        document.getElementById('editIndex').value = editIndex;
-        const item = items[editIndex];
-        document.getElementById('itemName').value = item.name;
-        document.getElementById('itemCategory').value = item.category || 'Electronics';
-        document.getElementById('itemRegion').value = item.region || 'nz';
-        document.getElementById('itemBaseline').value = item.baselinePrice || '';
-        document.getElementById('itemTarget').value = item.targetPrice || '';
-        document.getElementById('itemImage').value = item.image || '';
-
-        if (item.storesOnSale && item.storesOnSale.length > 0) {
-          item.storesOnSale.forEach(s => addStoreRow(s.name, s.price, s.link));
-        }
-      } else {
-        document.getElementById('modalTitle').innerHTML = `<i data-lucide="plus-circle" class="w-5 h-5 text-cyan-400"></i> Track New Item`;
-        document.getElementById('editIndex').value = -1;
-        document.getElementById('itemForm').reset();
-      }
+      document.getElementById('newItemName').value = '';
+      document.getElementById('newItemTarget').value = '';
+      document.getElementById('newItemRegion').value = 'nz';
+      updateSnippet();
       lucide.createIcons();
     }
 
@@ -313,100 +282,60 @@
       document.getElementById('itemModal').classList.add('hidden');
     }
 
-    function addStoreRow(name = '', price = '', link = '') {
-      const container = document.getElementById('storeRowsContainer');
-      const div = document.createElement('div');
-      div.className = 'flex items-center gap-2 bg-ocean-950/40 p-2 rounded-xl border border-ocean-800';
-      div.innerHTML = `
-        <input type="text" placeholder="Store Name" value="${name}" class="store-name-input flex-1 bg-ocean-800 border border-ocean-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:border-cyan-500">
-        <input type="number" step="0.01" placeholder="Price $" value="${price}" class="store-price-input w-24 bg-ocean-800 border border-ocean-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:border-cyan-500">
-        <input type="url" placeholder="Direct Product Link URL" value="${link}" class="store-link-input flex-1 bg-ocean-800 border border-ocean-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:border-cyan-500">
-        <button type="button" onclick="this.parentElement.remove()" class="text-rose-400 hover:text-rose-300 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-      `;
-      container.appendChild(div);
-      lucide.createIcons();
-    }
+    function updateSnippet() {
+      const name = document.getElementById('newItemName').value.trim() || 'Item Name Here';
+      const targetVal = document.getElementById('newItemTarget').value;
+      const target = targetVal ? parseFloat(targetVal) : null;
+      const region = document.getElementById('newItemRegion').value;
 
-    function saveItem(e) {
-      e.preventDefault();
-      const editIndex = parseInt(document.getElementById('editIndex').value);
-      const name = document.getElementById('itemName').value;
-      const category = document.getElementById('itemCategory').value;
-      const region = document.getElementById('itemRegion').value;
-      const baselinePrice = parseFloat(document.getElementById('itemBaseline').value) || null;
-      const targetPrice = parseFloat(document.getElementById('itemTarget').value) || null;
-      const image = document.getElementById('itemImage').value.trim();
-
-      const storeRows = document.querySelectorAll('#storeRowsContainer > div');
-      const storesOnSale = [];
-      storeRows.forEach(row => {
-        const sName = row.querySelector('.store-name-input').value.trim();
-        const sPrice = parseFloat(row.querySelector('.store-price-input').value);
-        const sLink = row.querySelector('.store-link-input').value.trim();
-        if (sName && !isNaN(sPrice)) {
-          storesOnSale.push({ name: sName, price: sPrice, link: sLink || '#' });
-        }
-      });
-
-      const itemData = {
-        name,
-        category,
-        region,
-        baselinePrice,
-        targetPrice,
-        image,
-        storesOnSale
+      const obj = {
+        name: name,
+        target_price: target,
+        region: region
       };
-
-      if (editIndex > -1) {
-        items[editIndex] = itemData;
-        if (storesOnSale.length > 0 && (!items[editIndex].storesOnSale || items[editIndex].storesOnSale.length === 0)) {
-          addNotification(name, `"${name}" is now on sale across ${storesOnSale.length} store(s)!`);
-        }
-      } else {
-        items.push(itemData);
-        if (storesOnSale.length > 0) {
-          addNotification(name, `"${name}" is on sale right now starting at $${Math.min(...storesOnSale.map(s => s.price)).toFixed(2)} NZD!`);
-        }
-      }
-
-      saveToStorage();
-      closeModal();
+      document.getElementById('jsonSnippet').innerText = JSON.stringify(obj, null, 2);
     }
 
-    function deleteItem(index) {
-      if (confirm('Are you sure you want to stop tracking this item?')) {
-        items.splice(index, 1);
-        saveToStorage();
-      }
+    function copySnippet() {
+      const text = document.getElementById('jsonSnippet').innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i> Copied!`;
+        lucide.createIcons();
+        setTimeout(() => {
+          btn.innerHTML = `<i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy JSON`;
+          lucide.createIcons();
+        }, 2000);
+      });
     }
 
     function addNotification(itemName, message) {
       notifications.unshift({
-        id: Date.now(),
+        id: Date.now() + Math.random(),
         itemName,
         message,
-        time: 'Just now',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         read: false
       });
-      if (notifications.length > 20) notifications.pop();
+      if (notifications.length > 25) notifications.pop();
     }
 
     function toggleNotifications() {
-      const dropdown = document.getElementById('notifDropdown');
-      dropdown.classList.toggle('hidden');
+      document.getElementById('notifDropdown').classList.toggle('hidden');
     }
 
     function clearNotifications() {
       notifications = [];
-      saveToStorage();
+      localStorage.setItem('nz_sale_watch_notifs', JSON.stringify(notifications));
+      updateNotificationsUI();
     }
 
     function handleNotificationClick(notifId) {
       const notif = notifications.find(n => n.id === notifId);
       if (notif) {
         notif.read = true;
-        saveToStorage();
+        localStorage.setItem('nz_sale_watch_notifs', JSON.stringify(notifications));
+        updateNotificationsUI();
         toggleNotifications();
         
         const cards = document.querySelectorAll('.item-card');
@@ -440,7 +369,7 @@
       }
 
       list.innerHTML = notifications.map(n => `
-        <div onclick="handleNotificationClick(${n.id})" class="p-3 hover:bg-ocean-800/50 rounded-xl cursor-pointer transition ${n.read ? 'opacity-60' : 'bg-ocean-800/20'}">
+        <div onclick="handleNotificationClick(${n.id})" class="p-3 hover:bg-ocean-800/50 rounded-xl cursor-pointer transition ${n.read ? 'opacity-60' : 'bg-ocean-800/30 border border-cyan-500/20'}">
           <div class="flex items-start justify-between gap-2">
             <p class="text-xs font-semibold text-white">${n.itemName}</p>
             <span class="text-[10px] text-slate-400">${n.time}</span>
@@ -448,6 +377,22 @@
           <p class="text-xs text-slate-300 mt-1">${n.message}</p>
         </div>
       `).join('');
+    }
+
+    function renderEmptySetupState() {
+      const grid = document.getElementById('itemsGrid');
+      grid.innerHTML = `
+        <div class="col-span-full py-14 px-6 text-center bg-ocean-900/40 border border-ocean-800 rounded-3xl max-w-2xl mx-auto">
+          <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mx-auto mb-4">
+            <i data-lucide="cloud-lightning" class="w-8 h-8"></i>
+          </div>
+          <h3 class="text-lg font-bold text-white">Ready for Your First Cloud Scan</h3>
+          <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+            Your app is now connected to your background GitHub scraper. Once you add <code class="text-cyan-300">watchlist.json</code>, <code class="text-cyan-300">scraper.py</code>, and run your GitHub Action once, live store prices and direct sale links will automatically appear right here!
+          </p>
+        </div>
+      `;
+      lucide.createIcons();
     }
 
     function renderItems() {
@@ -459,8 +404,7 @@
       const onSaleCount = items.filter(i => i.storesOnSale && i.storesOnSale.length > 0).length;
       document.getElementById('statOnSale').innerText = onSaleCount;
 
-      const filtered = items.filter((item, index) => {
-        item.originalIndex = index;
+      const filtered = items.filter((item) => {
         const hasSale = item.storesOnSale && item.storesOnSale.length > 0;
         if (statusFilter === 'sale' && !hasSale) return false;
         if (statusFilter === 'tracking' && hasSale) return false;
@@ -475,8 +419,8 @@
             <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mx-auto mb-4">
               <i data-lucide="package-open" class="w-8 h-8"></i>
             </div>
-            <h3 class="text-base font-semibold text-white">No items found</h3>
-            <p class="text-xs text-slate-400 mt-1">Click "Track Item" above to add your first product to watch for sales.</p>
+            <h3 class="text-base font-semibold text-white">No matching items</h3>
+            <p class="text-xs text-slate-400 mt-1">Adjust your status/region filter or add a new item to watchlist.json.</p>
           </div>
         `;
         lucide.createIcons();
@@ -485,27 +429,34 @@
 
       grid.innerHTML = filtered.map((item) => {
         const hasSale = item.storesOnSale && item.storesOnSale.length > 0;
-        const iconName = categoryIcons[item.category] || 'package';
+
+        // Sort stores lowest price first
+        const sortedStores = hasSale 
+          ? [...item.storesOnSale].sort((a, b) => a.price - b.price) 
+          : [];
 
         const mediaHtml = item.image 
-          ? `<img src="${item.image}" alt="${item.name}" class="w-14 h-14 rounded-2xl object-cover border border-ocean-700 bg-ocean-800">`
-          : `<div class="w-14 h-14 rounded-2xl bg-ocean-800 border border-ocean-700 flex items-center justify-center text-cyan-400"><i data-lucide="${iconName}" class="w-7 h-7"></i></div>`;
+          ? `<img src="${item.image}" alt="${item.name}" class="w-16 h-16 rounded-2xl object-contain bg-white p-1.5 border border-ocean-700 shrink-0">`
+          : `<div class="w-16 h-16 rounded-2xl bg-ocean-800 border border-ocean-700 flex items-center justify-center text-cyan-400 shrink-0"><i data-lucide="tag" class="w-7 h-7"></i></div>`;
 
         let salesListHtml = '';
         if (hasSale) {
           salesListHtml = `
             <div class="mt-4 pt-4 border-t border-ocean-800/80 space-y-2">
               <p class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                <i data-lucide="tag" class="w-3.5 h-3.5"></i> On Sale at ${item.storesOnSale.length} Store(s):
+                <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> On Sale at ${sortedStores.length} Store${sortedStores.length > 1 ? 's' : ''}:
               </p>
               <div class="space-y-2">
-                ${item.storesOnSale.map(s => `
-                  <div class="flex items-center justify-between bg-ocean-950/60 p-2.5 rounded-xl border border-ocean-800/80">
-                    <div>
-                      <span class="text-xs font-semibold text-white block">${s.name}</span>
-                      <span class="text-xs font-bold text-emerald-400">$${s.price.toFixed(2)} NZD</span>
+                ${sortedStores.map((s, idx) => `
+                  <div class="flex items-center justify-between bg-ocean-950/70 p-2.5 rounded-xl border ${idx === 0 ? 'border-emerald-500/40' : 'border-ocean-800/80'}">
+                    <div class="pr-2">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-xs font-semibold text-white">${s.name}</span>
+                        ${idx === 0 ? '<span class="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">Best</span>' : ''}
+                      </div>
+                      <span class="text-sm font-bold text-emerald-400">$${s.price.toFixed(2)} NZD</span>
                     </div>
-                    <a href="${s.link}" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-1.5 bg-emerald-500 hover:bg-emerald-400 text-ocean-950 font-bold px-3 py-1.5 rounded-lg text-xs shadow-md shadow-emerald-500/20 transition">
+                    <a href="${s.link}" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-1.5 bg-emerald-500 hover:bg-emerald-400 text-ocean-950 font-bold px-3 py-2 rounded-lg text-xs shadow-md shadow-emerald-500/20 transition shrink-0">
                       <span>View Sale</span>
                       <i data-lucide="external-link" class="w-3.5 h-3.5 stroke-[2.5]"></i>
                     </a>
@@ -518,52 +469,30 @@
           salesListHtml = `
             <div class="mt-4 pt-4 border-t border-ocean-800/80">
               <div class="flex items-center justify-between text-xs text-slate-400">
-                <span>Status</span>
-                <span class="text-cyan-300 font-medium flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5"></i> Watching for sales...</span>
+                <span>Cloud Status</span>
+                <span class="text-cyan-300 font-medium flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> Watching for sales...
+                </span>
               </div>
             </div>
           `;
         }
 
         const overseasBadge = item.region === 'overseas' 
-          ? `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 flex items-center gap-1"><i data-lucide="globe" class="w-3 h-3"></i> Converted to NZD</span>`
-          : '';
+          ? `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 flex items-center gap-1"><i data-lucide="globe" class="w-3 h-3"></i> Overseas</span>`
+          : `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-ocean-800 text-slate-300 border border-ocean-700/60">NZ Stores</span>`;
 
         return `
-          <div class="item-card bg-ocean-900/60 border border-ocean-800 rounded-3xl p-5 shadow-xl flex flex-col justify-between transition" data-name="${item.name}">
+          <div class="item-card bg-ocean-900/60 border ${hasSale ? 'border-emerald-500/30' : 'border-ocean-800'} rounded-3xl p-5 shadow-xl flex flex-col justify-between transition" data-name="${item.name}">
             <div>
-              <div class="flex items-start justify-between gap-3 mb-4">
-                <div class="flex items-center space-x-3">
-                  ${mediaHtml}
-                  <div>
-                    <div class="flex items-center gap-1.5 flex-wrap">
-                      <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-ocean-800 text-cyan-300 border border-ocean-700/60">${item.category || 'Electronics'}</span>
-                      ${overseasBadge}
-                    </div>
-                    <h3 class="font-bold text-white text-base mt-1 leading-snug">${item.name}</h3>
+              <div class="flex items-start space-x-3.5 mb-3">
+                ${mediaHtml}
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5 flex-wrap mb-1">
+                    ${overseasBadge}
+                    ${item.targetPrice ? `<span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-ocean-800 text-cyan-300">Target: $${item.targetPrice.toFixed(2)}</span>` : ''}
                   </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="flex items-center space-x-1">
-                  <button onclick="openModal(${item.originalIndex})" title="Edit Item" class="p-2 text-slate-400 hover:text-white rounded-xl bg-ocean-800/50 hover:bg-ocean-800 transition">
-                    <i data-lucide="edit-2" class="w-4 h-4"></i>
-                  </button>
-                  <button onclick="deleteItem(${item.originalIndex})" title="Delete Item" class="p-2 text-rose-400 hover:text-rose-300 rounded-xl bg-ocean-800/50 hover:bg-ocean-800 transition">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Meta details -->
-              <div class="grid grid-cols-2 gap-2 text-xs bg-ocean-950/40 p-3 rounded-2xl border border-ocean-800/60 mb-2">
-                <div>
-                  <span class="text-slate-400 block text-[10px]">Baseline RRP</span>
-                  <span class="font-medium text-slate-200">${item.baselinePrice ? `$${item.baselinePrice.toFixed(2)} NZD` : 'Not set'}</span>
-                </div>
-                <div>
-                  <span class="text-slate-400 block text-[10px]">Target Price</span>
-                  <span class="font-medium text-slate-200">${item.targetPrice ? `$${item.targetPrice.toFixed(2)} NZD` : 'Not set'}</span>
+                  <h3 class="font-bold text-white text-base leading-snug break-words">${item.name}</h3>
                 </div>
               </div>
 
