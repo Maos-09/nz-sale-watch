@@ -3,14 +3,8 @@
     "name": "Sony WH-1000XM5",
     "region": "nz",
     "targetPrice": 450,
-    "image": "https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcRzpv4OZd5YWf60UyjbgTraQXqVRhfu2ZKXP35eL4u0My_WkX9--UbKYYcn8xYJN8ylJt_0fwzvtXJLoWc8gTKH01iCovR-jlq2hxj0www",
-    "storesOnSale": [
-      {
-        "name": "eBay - irdisales",
-        "price": 409.06,
-        "link": "https://www.google.co.nz/search?ibp=oshop&q=Sony WH-1000XM5&prds=catalogid:14889149413452437791,productid:12943214991836232203,headlineOfferDocid:5421436733670050974,imageDocid:12484973643530426264,rds:PC_11726664398501807381|PROD_PC_11726664398501807381,gpcid:11726664398501807381,mid:576462892684740299,pvt:hg&hl=en&gl=nz&udm=28"
-      }
-    ]
+    "image": "",
+    "storesOnSale": []
   },
   {
     "name": "iPhone 15 128GB",
